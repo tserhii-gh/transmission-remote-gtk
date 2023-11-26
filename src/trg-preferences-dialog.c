@@ -286,49 +286,6 @@ static GtkWidget *trgp_spin_new(TrgPreferencesDialog *dlg, gchar *key, int low, 
     return w;
 }
 
-static void toggle_filter_trackers(GtkToggleButton *w, gpointer win)
-{
-    TrgStateSelector *selector = trg_main_window_get_state_selector(TRG_MAIN_WINDOW(win));
-    trg_state_selector_set_show_trackers(selector, gtk_toggle_button_get_active(w));
-}
-
-static void toggle_directories_first(GtkToggleButton *w, gpointer win)
-{
-    TrgStateSelector *selector = trg_main_window_get_state_selector(TRG_MAIN_WINDOW(win));
-    trg_state_selector_set_directories_first(selector, gtk_toggle_button_get_active(w));
-}
-
-#if TRG_WITH_GRAPH
-static void toggle_graph(GtkToggleButton *w, gpointer win)
-{
-    if (gtk_toggle_button_get_active(w))
-        trg_main_window_add_graph(TRG_MAIN_WINDOW(win), TRUE);
-    else
-        trg_main_window_remove_graph(TRG_MAIN_WINDOW(win));
-}
-#endif
-
-static void toggle_tray_icon(GtkToggleButton *w, gpointer win)
-{
-    if (gtk_toggle_button_get_active(w))
-        trg_main_window_add_tray(TRG_MAIN_WINDOW(win));
-    else
-        trg_main_window_remove_tray(TRG_MAIN_WINDOW(win));
-}
-
-static void menu_bar_toggle_filter_dirs(GtkToggleButton *w, gpointer win)
-{
-    TrgStateSelector *selector = trg_main_window_get_state_selector(TRG_MAIN_WINDOW(win));
-    trg_state_selector_set_show_dirs(selector, gtk_toggle_button_get_active(w));
-}
-
-static void view_states_toggled_cb(GtkToggleButton *w, gpointer data)
-{
-    GtkWidget *scroll = gtk_widget_get_parent(
-        GTK_WIDGET(trg_main_window_get_state_selector(TRG_MAIN_WINDOW(data))));
-    trg_widget_set_visible(scroll, gtk_toggle_button_get_active(w));
-}
-
 static void notebook_toggled_cb(GtkToggleButton *b, gpointer data)
 {
     trg_main_window_notebook_set_visible(TRG_MAIN_WINDOW(data), gtk_toggle_button_get_active(b));
@@ -587,62 +544,16 @@ static GtkWidget *trg_prefs_viewPage(TrgPreferencesDialog *dlg)
 {
     TrgPreferencesDialogPrivate *priv = TRG_PREFERENCES_DIALOG_GET_PRIVATE(dlg);
 
-    GtkWidget *w, *dep, *t, *tray;
+    GtkWidget *w, *t;
     guint row = 0;
 
     t = hig_workarea_create();
 
     hig_workarea_add_section_title(t, &row, _("View"));
 
-    dep = w = trgp_check_new(dlg, _("State selector"), TRG_PREFS_KEY_SHOW_STATE_SELECTOR,
-                             TRG_PREFS_GLOBAL, NULL);
-    g_signal_connect(G_OBJECT(w), "toggled", G_CALLBACK(view_states_toggled_cb), priv->win);
-    hig_workarea_add_wide_control(t, &row, w);
-
-    w = trgp_check_new(dlg, _("Directory filters"), TRG_PREFS_KEY_FILTER_DIRS, TRG_PREFS_GLOBAL,
-                       GTK_TOGGLE_BUTTON(dep));
-    g_signal_connect(G_OBJECT(w), "toggled", G_CALLBACK(menu_bar_toggle_filter_dirs), priv->win);
-    hig_workarea_add_wide_control(t, &row, w);
-
-    w = trgp_check_new(dlg, _("Tracker filters"), TRG_PREFS_KEY_FILTER_TRACKERS, TRG_PREFS_GLOBAL,
-                       GTK_TOGGLE_BUTTON(dep));
-    g_signal_connect(G_OBJECT(w), "toggled", G_CALLBACK(toggle_filter_trackers), priv->win);
-    hig_workarea_add_wide_control(t, &row, w);
-
-    w = trgp_check_new(dlg, _("Directories first"), TRG_PREFS_KEY_DIRECTORIES_FIRST,
-                       TRG_PREFS_GLOBAL, GTK_TOGGLE_BUTTON(dep));
-    g_signal_connect(G_OBJECT(w), "toggled", G_CALLBACK(toggle_directories_first), priv->win);
-    hig_workarea_add_wide_control(t, &row, w);
-
     w = trgp_check_new(dlg, _("Torrent Details"), TRG_PREFS_KEY_SHOW_NOTEBOOK, TRG_PREFS_GLOBAL,
                        NULL);
     g_signal_connect(G_OBJECT(w), "toggled", G_CALLBACK(notebook_toggled_cb), priv->win);
-    hig_workarea_add_wide_control(t, &row, w);
-
-#if TRG_WITH_GRAPH
-    w = trgp_check_new(dlg, _("Show graph"), TRG_PREFS_KEY_SHOW_GRAPH, TRG_PREFS_GLOBAL,
-                       GTK_TOGGLE_BUTTON(w));
-    g_signal_connect(G_OBJECT(w), "toggled", G_CALLBACK(toggle_graph), priv->win);
-    hig_workarea_add_wide_control(t, &row, w);
-#endif
-
-    hig_workarea_add_section_title(t, &row, _("System Tray"));
-
-    tray = trgp_check_new(dlg, _("Show in system tray"), TRG_PREFS_KEY_SYSTEM_TRAY,
-                          TRG_PREFS_GLOBAL, NULL);
-    g_signal_connect(G_OBJECT(tray), "toggled", G_CALLBACK(toggle_tray_icon), priv->win);
-
-    if (!HAVE_LIBAPPINDICATOR) {
-        gtk_widget_set_sensitive(tray, FALSE);
-        gtk_widget_set_tooltip_text(tray, _("System tray not supported."));
-    }
-
-    hig_workarea_add_wide_control(t, &row, tray);
-
-    w = trgp_check_new(dlg, _("Minimise to system tray"), TRG_PREFS_KEY_SYSTEM_TRAY_MINIMISE,
-                       TRG_PREFS_GLOBAL, NULL);
-    gtk_widget_set_sensitive(w, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(tray)));
-    g_signal_connect(G_OBJECT(tray), "toggled", G_CALLBACK(toggle_active_arg_is_sensitive), w);
     hig_workarea_add_wide_control(t, &row, w);
 
     hig_workarea_add_section_title(t, &row, _("Notifications"));

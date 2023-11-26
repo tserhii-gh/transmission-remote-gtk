@@ -27,7 +27,6 @@
 #include "trg-main-window.h"
 #include "trg-menu-bar.h"
 #include "trg-prefs.h"
-#include "trg-torrent-graph.h"
 #include "trg-torrent-tree-view.h"
 #include "trg-tree-view.h"
 
@@ -59,12 +58,6 @@ enum {
     PROP_MAIN_WINDOW,
     PROP_TORRENT_TREE_VIEW,
     PROP_ACCEL_GROUP,
-    PROP_DIR_FILTERS,
-    PROP_TRACKER_FILTERS,
-    PROP_DIRECTORIES_FIRST,
-#if TRG_WITH_GRAPH
-    PROP_VIEW_SHOW_GRAPH,
-#endif
     PROP_MOVE_DOWN_QUEUE,
     PROP_MOVE_UP_QUEUE,
     PROP_MOVE_BOTTOM_QUEUE,
@@ -103,12 +96,6 @@ struct _TrgMenuBarPrivate {
     GtkWidget *mb_view_stats;
     GtkWidget *mb_about;
     GtkWidget *mb_quit;
-    GtkWidget *mb_directory_filters;
-    GtkWidget *mb_tracker_filters;
-    GtkWidget *mb_directory_first;
-#if TRG_WITH_GRAPH
-    GtkWidget *mb_view_graph;
-#endif
     GtkWidget *mb_down_queue;
     GtkWidget *mb_up_queue;
     GtkWidget *mb_bottom_queue;
@@ -264,14 +251,6 @@ static void trg_menu_bar_get_property(GObject *object, guint property_id, GValue
     case PROP_ABOUT_BUTTON:
         g_value_set_object(value, priv->mb_about);
         break;
-#if TRG_WITH_GRAPH
-    case PROP_VIEW_SHOW_GRAPH:
-        g_value_set_object(value, priv->mb_view_graph);
-        break;
-#endif
-    case PROP_VIEW_STATES_BUTTON:
-        g_value_set_object(value, priv->mb_view_states);
-        break;
     case PROP_VIEW_NOTEBOOK_BUTTON:
         g_value_set_object(value, priv->mb_view_notebook);
         break;
@@ -280,15 +259,6 @@ static void trg_menu_bar_get_property(GObject *object, guint property_id, GValue
         break;
     case PROP_QUIT:
         g_value_set_object(value, priv->mb_quit);
-        break;
-    case PROP_DIR_FILTERS:
-        g_value_set_object(value, priv->mb_directory_filters);
-        break;
-    case PROP_TRACKER_FILTERS:
-        g_value_set_object(value, priv->mb_tracker_filters);
-        break;
-    case PROP_DIRECTORIES_FIRST:
-        g_value_set_object(value, priv->mb_directory_first);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -324,17 +294,6 @@ static void trg_menu_bar_accel_add(TrgMenuBar *menu, GtkWidget *item, guint key,
     gtk_widget_add_accelerator(item, "activate", priv->accel_group, key, mods, GTK_ACCEL_VISIBLE);
 }
 
-static void view_menu_radio_item_toggled_cb(GtkCheckMenuItem *w, gpointer data)
-{
-    TrgPrefs *p = TRG_PREFS(data);
-    const gchar *key = (gchar *)g_object_get_data(G_OBJECT(w), G_DATAKEY_CONF_KEY);
-
-    if (gtk_check_menu_item_get_active(w)) {
-        gint index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), G_DATAKEY_PREF_VALUE));
-        trg_prefs_set_int(p, key, index, TRG_PREFS_GLOBAL);
-    }
-}
-
 static void view_menu_item_toggled_cb(GtkCheckMenuItem *w, gpointer data)
 {
     TrgPrefs *p = TRG_PREFS(data);
@@ -354,34 +313,6 @@ static void trg_menu_bar_view_item_update(TrgPrefs *p, const gchar *updatedKey, 
     if (!g_strcmp0(updatedKey, key))
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(data),
                                        trg_prefs_get_bool(p, key, TRG_PREFS_GLOBAL));
-}
-
-static void trg_menu_bar_view_radio_item_update(TrgPrefs *p, const gchar *updatedKey, gpointer data)
-{
-    const gchar *key = (gchar *)g_object_get_data(G_OBJECT(data), G_DATAKEY_CONF_KEY);
-    gint myIndex = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(data), G_DATAKEY_PREF_VALUE));
-
-    if (!g_strcmp0(updatedKey, key)) {
-        gboolean shouldBeActive = trg_prefs_get_int(p, key, TRG_PREFS_GLOBAL) == myIndex;
-        if (shouldBeActive != gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(data)))
-            gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(data), shouldBeActive);
-    }
-}
-
-static GtkWidget *trg_menu_bar_view_radio_item_new(TrgPrefs *prefs, GSList *group, const gchar *key,
-                                                   gint index, const gchar *label)
-{
-    GtkWidget *w = gtk_radio_menu_item_new_with_label(group, label);
-    g_object_set_data_full(G_OBJECT(w), G_DATAKEY_CONF_KEY, g_strdup(key), g_free);
-    g_object_set_data(G_OBJECT(w), G_DATAKEY_PREF_VALUE, GINT_TO_POINTER(index));
-
-    gtk_check_menu_item_set_active(
-        GTK_CHECK_MENU_ITEM(w), trg_prefs_get_int(prefs, key, TRG_PREFS_GLOBAL) == (gint64)index);
-
-    g_signal_connect(w, "toggled", G_CALLBACK(view_menu_radio_item_toggled_cb), prefs);
-    g_signal_connect(prefs, "pref-changed", G_CALLBACK(trg_menu_bar_view_radio_item_update), w);
-
-    return w;
 }
 
 static GtkWidget *trg_menu_bar_view_item_new(TrgPrefs *prefs, const gchar *key, const gchar *label,
@@ -411,57 +342,17 @@ static GtkWidget *trg_menu_bar_view_menu_new(TrgMenuBar *mb)
 
     GtkWidget *view = gtk_menu_item_new_with_mnemonic(_("_View"));
     GtkWidget *viewMenu = gtk_menu_new();
-    GSList *group;
 
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(view), viewMenu);
-
-    priv->mb_view_transmission = trg_menu_bar_view_radio_item_new(
-        priv->prefs, NULL, TRG_PREFS_KEY_STYLE, TRG_STYLE_TR, _("Transmission Style"));
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_view_transmission);
-    group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(priv->mb_view_transmission));
-    priv->mb_view_transmission_compact
-        = trg_menu_bar_view_radio_item_new(priv->prefs, group, TRG_PREFS_KEY_STYLE,
-                                           TRG_STYLE_TR_COMPACT, _("Transmission Compact Style"));
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_view_transmission_compact);
-    group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(priv->mb_view_transmission_compact));
-    priv->mb_view_classic = trg_menu_bar_view_radio_item_new(
-        priv->prefs, group, TRG_PREFS_KEY_STYLE, TRG_STYLE_CLASSIC, _("Classic Style"));
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_view_classic);
 
     gtk_menu_shell_append(
         GTK_MENU_SHELL(viewMenu),
         trg_tree_view_sort_menu(TRG_TREE_VIEW(priv->torrent_tree_view), _("Sort")));
 
-    priv->mb_view_states = trg_menu_bar_view_item_new(
-        priv->prefs, TRG_PREFS_KEY_SHOW_STATE_SELECTOR, _("State selector"), NULL);
-    trg_menu_bar_accel_add(mb, priv->mb_view_states, GDK_F2, 0);
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_view_states);
-
-    priv->mb_directory_filters = trg_menu_bar_view_item_new(
-        priv->prefs, TRG_PREFS_KEY_FILTER_DIRS, _("Directory filters"), priv->mb_view_states);
-    trg_menu_bar_accel_add(mb, priv->mb_directory_filters, GDK_F3, 0);
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_directory_filters);
-
-    priv->mb_tracker_filters = trg_menu_bar_view_item_new(
-        priv->prefs, TRG_PREFS_KEY_FILTER_TRACKERS, _("Tracker filters"), priv->mb_view_states);
-    trg_menu_bar_accel_add(mb, priv->mb_tracker_filters, GDK_F4, 0);
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_tracker_filters);
-
-    priv->mb_directory_first = trg_menu_bar_view_item_new(
-        priv->prefs, TRG_PREFS_KEY_DIRECTORIES_FIRST, _("Directories first"), priv->mb_view_states);
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_directory_first);
-
     priv->mb_view_notebook = trg_menu_bar_view_item_new(priv->prefs, TRG_PREFS_KEY_SHOW_NOTEBOOK,
                                                         _("Torrent Details"), NULL);
     trg_menu_bar_accel_add(mb, priv->mb_view_notebook, GDK_F5, 0);
     gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_view_notebook);
-
-#if TRG_WITH_GRAPH
-    priv->mb_view_graph = trg_menu_bar_view_item_new(priv->prefs, TRG_PREFS_KEY_SHOW_GRAPH,
-                                                     _("Graph"), priv->mb_view_notebook);
-    trg_menu_bar_accel_add(mb, priv->mb_view_graph, GDK_F6, 0);
-    gtk_menu_shell_append(GTK_MENU_SHELL(viewMenu), priv->mb_view_graph);
-#endif
 
     priv->mb_view_stats = gtk_menu_item_new_with_mnemonic(_("_Statistics"));
     trg_menu_bar_accel_add(mb, priv->mb_view_stats, GDK_F7, 0);
@@ -717,8 +608,6 @@ static void trg_menu_bar_class_init(TrgMenuBarClass *klass)
                                      "About Button");
     trg_menu_bar_install_widget_prop(object_class, PROP_VIEW_STATS_BUTTON, "view-stats-button",
                                      "View stats button");
-    trg_menu_bar_install_widget_prop(object_class, PROP_VIEW_STATES_BUTTON, "view-states-button",
-                                     "View states Button");
     trg_menu_bar_install_widget_prop(object_class, PROP_VIEW_NOTEBOOK_BUTTON,
                                      "view-notebook-button", "View notebook Button");
     trg_menu_bar_install_widget_prop(object_class, PROP_REMOTE_PREFS_BUTTON, "remote-prefs-button",
@@ -726,15 +615,6 @@ static void trg_menu_bar_class_init(TrgMenuBarClass *klass)
     trg_menu_bar_install_widget_prop(object_class, PROP_LOCAL_PREFS_BUTTON, "local-prefs-button",
                                      "Local Prefs Button");
     trg_menu_bar_install_widget_prop(object_class, PROP_QUIT, "quit-button", "Quit Button");
-    trg_menu_bar_install_widget_prop(object_class, PROP_DIR_FILTERS, "dir-filters", "Dir Filters");
-    trg_menu_bar_install_widget_prop(object_class, PROP_TRACKER_FILTERS, "tracker-filters",
-                                     "Tracker Filters");
-    trg_menu_bar_install_widget_prop(object_class, PROP_DIRECTORIES_FIRST,
-                                     TRG_PREFS_KEY_DIRECTORIES_FIRST, "Directories first");
-#if TRG_WITH_GRAPH
-    trg_menu_bar_install_widget_prop(object_class, PROP_VIEW_SHOW_GRAPH, "show-graph",
-                                     "Show Graph");
-#endif
     trg_menu_bar_install_widget_prop(object_class, PROP_MOVE_DOWN_QUEUE, "down-queue",
                                      "Down Queue");
     trg_menu_bar_install_widget_prop(object_class, PROP_MOVE_UP_QUEUE, "up-queue", "Up Queue");

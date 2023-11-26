@@ -599,24 +599,6 @@ static GObject *trg_state_selector_constructor(GType type, guint n_construct_pro
     gtk_tree_view_set_model(GTK_TREE_VIEW(object), GTK_TREE_MODEL(store));
 
     trg_state_selector_add_state(selector, &iter, -1, "help-about", _("All"), 0, &priv->all_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "go-down", _("Downloading"),
-                                 TORRENT_FLAG_DOWNLOADING, &priv->down_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "media-seek-backward", _("Queue Down"),
-                                 TORRENT_FLAG_DOWNLOADING_WAIT, &priv->down_wait_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "go-up", _("Seeding"), TORRENT_FLAG_SEEDING,
-                                 &priv->seeding_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "media-seek-forward", _("Queue Up"),
-                                 TORRENT_FLAG_SEEDING_WAIT, &priv->seed_wait_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "media-playback-pause", _("Paused"),
-                                 TORRENT_FLAG_PAUSED, &priv->paused_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "trg-gtk-apply", _("Complete"),
-                                 TORRENT_FLAG_COMPLETE, &priv->complete_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "edit-select-all", _("Incomplete"),
-                                 TORRENT_FLAG_INCOMPLETE, &priv->incomplete_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "network-workgroup", _("Active"),
-                                 TORRENT_FLAG_ACTIVE, &priv->active_rr);
-    trg_state_selector_add_state(selector, &iter, -1, "view-refresh", _("Checking"),
-                                 TORRENT_FLAG_CHECKING_ANY, &priv->checking_rr);
     trg_state_selector_add_state(selector, &iter, -1, NULL, NULL, 0, NULL);
 
     gtk_tree_view_set_rubber_banding(GTK_TREE_VIEW(object), TRUE);

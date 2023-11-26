@@ -215,18 +215,13 @@ TrgTorrentTreeView *trg_torrent_tree_view_new(TrgClient *tc, GtkTreeModel *model
     GObject *obj = g_object_new(TRG_TYPE_TORRENT_TREE_VIEW, NULL);
     TrgTorrentTreeViewPrivate *priv = GET_PRIVATE(obj);
     TrgPrefs *prefs = trg_client_get_prefs(tc);
-    gint64 style = trg_prefs_get_int(prefs, TRG_PREFS_KEY_STYLE, TRG_PREFS_GLOBAL);
 
     trg_tree_view_set_prefs(TRG_TREE_VIEW(obj), trg_client_get_prefs(tc));
     gtk_tree_view_set_model(GTK_TREE_VIEW(obj), model);
 
     priv->client = tc;
 
-    if (style == TRG_STYLE_CLASSIC) {
-        setup_classic_layout(TRG_TORRENT_TREE_VIEW(obj));
-    } else {
-        setup_transmission_layout(TRG_TORRENT_TREE_VIEW(obj), style);
-    }
+    setup_classic_layout(TRG_TORRENT_TREE_VIEW(obj));
 
     g_signal_connect(prefs, "pref-changed", G_CALLBACK(trg_torrent_tree_view_pref_changed), obj);
 
