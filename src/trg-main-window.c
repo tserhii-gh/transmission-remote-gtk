@@ -126,7 +126,6 @@ static TrgTorrentTreeView *trg_main_window_torrent_tree_view_new(TrgMainWindow *
 static gboolean trg_dialog_error_handler(TrgMainWindow *win, trg_response *response);
 static gboolean torrent_selection_changed(GtkTreeSelection *selection, TrgMainWindow *win);
 static void trg_main_window_torrent_scrub(TrgMainWindow *win);
-static void entry_filter_changed_cb(GtkWidget *w, TrgMainWindow *win);
 static void torrent_state_selection_changed(TrgStateSelector *selector, guint flag, gpointer data);
 static void trg_main_window_conn_changed(TrgMainWindow *win, gboolean connected);
 static void trg_main_window_get_property(GObject *object, guint property_id, GValue *value,
@@ -135,8 +134,6 @@ static void trg_main_window_set_property(GObject *object, guint property_id, con
                                          GParamSpec *pspec);
 static void quit_cb(GtkWidget *w, gpointer data);
 static TrgMenuBar *trg_main_window_menu_bar_new(TrgMainWindow *win);
-static void clear_filter_entry_cb(GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event,
-                                  gpointer user_data);
 static GtkWidget *trg_imagemenuitem_box(const gchar *text, char *icon_name);
 static GtkWidget *trg_imagemenuitem_new(GtkMenuShell *shell, const gchar *text, char *icon_name,
                                         gboolean sensitive, GCallback cb, gpointer cbdata);
@@ -288,7 +285,7 @@ static void torrent_event_notification(TrgTorrentModel *model, gchar *icon_name,
 
 static void on_torrent_completed(TrgTorrentModel *model, GtkTreeIter *iter, gpointer data)
 {
-    torrent_event_notification(model, "trg-gtk-apply", _("This torrent has completed."),
+    torrent_event_notification(model, "gtk-apply", _("This torrent has completed."),
                                TRG_PREFS_KEY_COMPLETE_NOTIFY, iter, data);
 }
 
@@ -1371,16 +1368,6 @@ static void trg_main_window_torrent_scrub(TrgMainWindow *win)
     trg_menu_bar_torrent_actions_sensitive(priv->menuBar, FALSE);
 }
 
-static void entry_filter_changed_cb(GtkWidget *w, TrgMainWindow *win)
-{
-    TrgMainWindowPrivate *priv = trg_main_window_get_instance_private(win);
-    gboolean clearSensitive = gtk_entry_get_text_length(GTK_ENTRY(w)) > 0;
-
-    gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(priv->filteredTorrentModel));
-
-    g_object_set(priv->filterEntry, "secondary-icon-sensitive", clearSensitive, NULL);
-}
-
 static void torrent_state_selection_changed(TrgStateSelector *selector G_GNUC_UNUSED,
                                             guint flag G_GNUC_UNUSED, gpointer data)
 {
@@ -1546,11 +1533,11 @@ static TrgMenuBar *trg_main_window_menu_bar_new(TrgMainWindow *win)
     return menuBar;
 }
 
-static void clear_filter_entry_cb(GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event,
-                                  gpointer user_data)
-{
-    gtk_entry_set_text(entry, "");
-}
+// static void clear_filter_entry_cb(GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event,
+//                                   gpointer user_data)
+// {
+//     gtk_entry_set_text(entry, "");
+// }
 
 static GtkWidget *trg_imagemenuitem_box(const gchar *text, char *icon_name)
 {
@@ -2156,7 +2143,6 @@ static GObject *trg_main_window_constructor(GType type, guint n_construct_proper
                               ->constructor(type, n_construct_properties, construct_params));
     TrgMainWindowPrivate *priv
         = G_TYPE_INSTANCE_GET_PRIVATE(self, TRG_TYPE_MAIN_WINDOW, TrgMainWindowPrivate);
-    GtkWidget *w;
     GtkWidget *outerVbox;
     GtkWidget *toolbarHbox;
     // GtkWidget *outerAlignment;
@@ -2212,16 +2198,6 @@ static GObject *trg_main_window_constructor(GType type, guint n_construct_proper
     toolbarHbox = trg_hbox_new(FALSE, 0);
     priv->toolBar = trg_main_window_toolbar_new(self);
     gtk_box_pack_start(GTK_BOX(toolbarHbox), GTK_WIDGET(priv->toolBar), TRUE, TRUE, 0);
-
-    w = gtk_entry_new();
-    gtk_entry_set_icon_from_icon_name(GTK_ENTRY(w), GTK_ENTRY_ICON_SECONDARY, "edit-clear");
-    g_signal_connect(w, "icon-release", G_CALLBACK(clear_filter_entry_cb), NULL);
-    gtk_box_pack_start(GTK_BOX(toolbarHbox), w, FALSE, FALSE, 0);
-    g_object_set(w, "secondary-icon-sensitive", FALSE, NULL);
-    priv->filterEntry = w;
-
-    g_signal_connect(G_OBJECT(priv->filterEntry), "changed", G_CALLBACK(entry_filter_changed_cb),
-                     self);
 
     gtk_box_pack_start(GTK_BOX(outerVbox), GTK_WIDGET(toolbarHbox), FALSE, FALSE, 0);
 
