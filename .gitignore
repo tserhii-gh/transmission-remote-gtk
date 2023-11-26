@@ -12,7 +12,8 @@
 
 .deps/
 .libs/
-
+.cache/
+.vscode/
 
 __pycache__/
 
