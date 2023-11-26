@@ -1180,7 +1180,6 @@ static gboolean trg_torrent_tree_view_visible_func(GtkTreeModel *model, GtkTreeI
     TrgMainWindowPrivate *priv = trg_main_window_get_instance_private(win);
     guint flags;
     gboolean visible;
-    const gchar *filterText;
 
     guint32 criteria = trg_state_selector_get_flag(priv->stateSelector);
 
@@ -1215,23 +1214,6 @@ static gboolean trg_torrent_tree_view_visible_func(GtkTreeModel *model, GtkTreeI
     }
 
     visible = TRUE;
-
-    filterText = gtk_entry_get_text(GTK_ENTRY(priv->filterEntry));
-    if (strlen(filterText) > 0) {
-        gchar *name = NULL;
-        gtk_tree_model_get(model, iter, TORRENT_COLUMN_NAME, &name, -1);
-        if (name) {
-            gchar *filterCmp = g_utf8_casefold(filterText, -1);
-            gchar *nameCmp = g_utf8_casefold(name, -1);
-
-            if (!strstr(nameCmp, filterCmp))
-                visible = FALSE;
-
-            g_free(nameCmp);
-            g_free(filterCmp);
-            g_free(name);
-        }
-    }
 
     return visible;
 }
