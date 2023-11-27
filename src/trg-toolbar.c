@@ -168,7 +168,7 @@ static GObject *trg_toolbar_constructor(GType type, guint n_construct_properties
     gtk_toolbar_set_icon_size(GTK_TOOLBAR(obj), GTK_ICON_SIZE_LARGE_TOOLBAR);
     gtk_toolbar_set_style(GTK_TOOLBAR(obj), GTK_TOOLBAR_BOTH_HORIZ);
 
-    GtkWidget *img = gtk_image_new_from_icon_name("gtk-connect", GTK_ICON_SIZE_LARGE_TOOLBAR);
+    GtkWidget *img = gtk_image_new_from_icon_name("network-wired-symbolic", GTK_ICON_SIZE_LARGE_TOOLBAR);
     priv->tb_connect = GTK_WIDGET(gtk_menu_tool_button_new(img, _("Connect")));
     gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(priv->tb_connect), _("Connect"));
     gtk_tool_item_set_is_important(GTK_TOOL_ITEM(priv->tb_connect), TRUE);
@@ -178,34 +178,34 @@ static GObject *trg_toolbar_constructor(GType type, guint n_construct_properties
     gtk_widget_show_all(menu);
 
     priv->tb_disconnect = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Disconnect"), &position,
-                                               "gtk-disconnect", FALSE);
-    priv->tb_add = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Add"), &position, "list-add", FALSE);
+                                               "network-wired-acquiring-symbolic", FALSE);
+    priv->tb_add = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Add"), &position, "list-add-symbolic", FALSE);
 
     separator = gtk_separator_tool_item_new();
     gtk_toolbar_insert(GTK_TOOLBAR(obj), separator, position++);
 
     priv->tb_resume = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Resume"), &position,
-                                           "media-playback-start", FALSE);
+                                           "media-playback-start-symbolic", FALSE);
     priv->tb_pause = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Pause"), &position,
-                                          "media-playback-pause", FALSE);
+                                          "media-playback-pause-symbolic", FALSE);
 
     priv->tb_props = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Properties"), &position,
-                                          "document-properties", FALSE);
+                                          "text-x-generic-symbolic", FALSE);
 
     priv->tb_remove
-        = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Remove"), &position, "list-remove", FALSE);
+        = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Remove"), &position, "list-remove-symbolic", FALSE);
 
     priv->tb_delete = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Remove and delete data"), &position,
-                                           "edit-delete", FALSE);
+                                           "user-trash-symbolic", FALSE);
 
     separator = gtk_separator_tool_item_new();
     gtk_toolbar_insert(GTK_TOOLBAR(obj), separator, position++);
 
     priv->tb_local_prefs = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Local Preferences"), &position,
-                                                "preferences-system", TRUE);
+                                                "system-run-symbolic", TRUE);
 
     priv->tb_remote_prefs = trg_toolbar_item_new(TRG_TOOLBAR(obj), _("Remote Preferences"),
-                                                 &position, "network-workgroup", FALSE);
+                                                 &position, "network-workgroup-symbolic", FALSE);
 
     g_signal_connect(G_OBJECT(priv->prefs), "pref-profile-changed",
                      G_CALLBACK(trg_toolbar_refresh_menu), obj);
