@@ -521,7 +521,7 @@ static gboolean apply_all_changed_foreachfunc(GtkTreeModel *model, GtkTreePath *
         gint value;
         GValue gvalue = { 0 };
         g_value_init(&gvalue, G_TYPE_INT);
-        gtk_tree_model_get(combo_model, &selection_iter, 2, &column, 3, &value, -1);
+        gtk_tree_model_get(combo_model, &selection_iter, 1, &column, 2, &value, -1);
         g_value_set_int(&gvalue, value);
         gtk_tree_store_set_value(GTK_TREE_STORE(model), iter, column, &gvalue);
     }
@@ -537,12 +537,54 @@ static void trg_torrent_add_dialog_apply_all_changed_cb(GtkWidget *w, gpointer d
     gtk_combo_box_set_active(GTK_COMBO_BOX(w), -1);
 }
 
+static gboolean apply_download_all_changed_foreachfunc(GtkTreeModel *model, GtkTreePath *path,
+                                                   GtkTreeIter *iter, gpointer data)
+{
+    gint column = FC_ENABLED;
+    GValue gvalue = { 0 };
+    g_value_init(&gvalue, G_TYPE_INT);
+    g_value_set_int(&gvalue, TRUE);
+    gtk_tree_store_set_value(GTK_TREE_STORE(model), iter, column, &gvalue);
+    return FALSE;
+}
+
+static gboolean apply_skip_all_changed_foreachfunc(GtkTreeModel *model, GtkTreePath *path,
+                                                   GtkTreeIter *iter, gpointer data)
+{
+    gint column = FC_ENABLED;
+    GValue gvalue = { 0 };
+    g_value_init(&gvalue, G_TYPE_INT);
+    g_value_set_int(&gvalue, FALSE);
+    gtk_tree_store_set_value(GTK_TREE_STORE(model), iter, column, &gvalue);
+    return FALSE;
+}
+
+static void trg_torrent_add_dialog_apply_all_skip_cb(GtkWidget *w, gpointer data)
+{
+    TrgTorrentAddDialogPrivate *priv = TRG_TORRENT_ADD_DIALOG_GET_PRIVATE(data);
+    GtkWidget *tv = gtk_bin_get_child(GTK_BIN(priv->file_list));
+    GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(tv));
+    gtk_tree_model_foreach(model, apply_skip_all_changed_foreachfunc, NULL);
+}
+
+static void trg_torrent_add_dialog_apply_all_download_cb(GtkWidget *w, gpointer data)
+{
+    TrgTorrentAddDialogPrivate *priv = TRG_TORRENT_ADD_DIALOG_GET_PRIVATE(data);
+    GtkWidget *tv = gtk_bin_get_child(GTK_BIN(priv->file_list));
+    GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(tv));
+    gtk_tree_model_foreach(model, apply_download_all_changed_foreachfunc, NULL);
+}
+
 static GtkWidget *trg_torrent_add_dialog_apply_all_combo_new(TrgTorrentAddDialog *dialog)
 {
     GtkListStore *model = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_INT);
     GtkWidget *combo = gtk_combo_box_new();
+    GtkWidget *quickStatusSwitchHbox, *skipAll, *downloadAll;
     GtkTreeIter iter;
     GtkCellRenderer *renderer;
+
+    quickStatusSwitchHbox = trg_hbox_new(FALSE, 0);
+
 
     gtk_list_store_append(model, &iter);
     gtk_list_store_set(model, &iter, 0, _("High Priority"), 1, FC_PRIORITY, 2, TR_PRI_HIGH, -1);
@@ -556,14 +598,22 @@ static GtkWidget *trg_torrent_add_dialog_apply_all_combo_new(TrgTorrentAddDialog
     gtk_list_store_set(model, &iter, 0, _("Skip"), 1, FC_ENABLED, 2, FALSE, -1);
 
     renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, FALSE);
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
     gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo), renderer, "text", 0);
 
     gtk_combo_box_set_model(GTK_COMBO_BOX(combo), GTK_TREE_MODEL(model));
     g_signal_connect(combo, "changed", G_CALLBACK(trg_torrent_add_dialog_apply_all_changed_cb),
                      dialog);
 
-    return combo;
+    downloadAll = gtk_button_new_with_label(_("Download"));
+    skipAll = gtk_button_new_with_label(_("Skip"));
+    g_signal_connect(downloadAll, "clicked",G_CALLBACK(trg_torrent_add_dialog_apply_all_download_cb), dialog);
+    g_signal_connect(skipAll, "clicked",G_CALLBACK(trg_torrent_add_dialog_apply_all_skip_cb), dialog);
+    gtk_box_pack_start(GTK_BOX(quickStatusSwitchHbox), combo, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(quickStatusSwitchHbox), downloadAll, FALSE, FALSE, 4);
+    gtk_box_pack_start(GTK_BOX(quickStatusSwitchHbox), skipAll, FALSE, FALSE, 0);
+    
+    return quickStatusSwitchHbox;
 }
 
 static GObject *trg_torrent_add_dialog_constructor(GType type, guint n_construct_properties,
