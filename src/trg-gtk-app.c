@@ -184,6 +184,10 @@ static void trg_gtk_app_init(TrgGtkApp *self)
 
 TrgGtkApp *trg_gtk_app_new(TrgClient *client)
 {
+    /* Prefere dark theme mode */
+    /* GtkSettings *gtk_settings = gtk_settings_get_default ();
+    g_object_set (gtk_settings, "gtk-application-prefer-dark-theme", TRUE, NULL); */
+
     return g_object_new(TRG_TYPE_GTK_APP, "application-id", APPLICATION_ID, "flags",
                         G_APPLICATION_HANDLES_COMMAND_LINE, "trg-client", client, NULL);
 }
