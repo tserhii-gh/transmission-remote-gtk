@@ -85,13 +85,6 @@ gresources = gnome.compile_resources('trg-resources', gresource_xml,
                                      source_dir:  gresource_data)
 src_files += gresources
 
-
-# Windows
-if win32
-  windows = import('windows')
-  windres = windows.compile_resources('win32.rc')
-endif
-
 trg_bin = executable(project_name, 
                      sources: src_files,
                      dependencies: trg_deps,

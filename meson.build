@@ -114,8 +114,7 @@ ldflags = cc.get_supported_link_arguments('-Wl,-z,relro',
 add_project_link_arguments(ldflags, language: 'c')
 
 # Windows compiler options
-win32 = host_machine.system() == 'windows' or host_machine.system() == 'cgywin'
-if win32
+if host_machine.system() == 'windows' or host_machine.system() == 'cgywin'
   win_cflags = cc.get_supported_arguments('-mms-bitfields',
                                           '-mwin32',
                                           '-mwindows')
