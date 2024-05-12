@@ -20,13 +20,12 @@ An example command for getting the packages required for an Ubuntu/Debian
 system:
 
 ```
-# apt install libgtk-3-dev libgeoip-dev gettext libsoup-3.0-dev libjson-glib-dev
+# apt install libgtk-3-dev gettext libsoup-3.0-dev libjson-glib-dev
 ```
 
 ### Optional Dependencies
 The following packages are optional dependencies:
 
- - libgeoip, country of origin of peers
  - libappindicator or libayatana-appindicator3, Application tray support
 
 If these libraries are installed at build time they will be automatically
