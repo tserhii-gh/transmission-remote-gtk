@@ -329,10 +329,6 @@ static GtkWidget *trg_prefs_generalPage(TrgPreferencesDialog *dlg)
     w = trgp_spin_new(dlg, TRG_PREFS_KEY_UPDATE_INTERVAL, 1, INT_MAX, 1, TRG_PREFS_PROFILE, NULL);
     hig_workarea_add_row(t, &row, _("Update interval:"), w, NULL);
 
-    w = trgp_spin_new(dlg, TRG_PREFS_KEY_MINUPDATE_INTERVAL, 1, INT_MAX, 1, TRG_PREFS_PROFILE,
-                      NULL);
-    hig_workarea_add_row(t, &row, _("Minimised update interval:"), w, NULL);
-
     w = trgp_spin_new(dlg, TRG_PREFS_KEY_SESSION_UPDATE_INTERVAL, 1, INT_MAX, 1, TRG_PREFS_PROFILE,
                       NULL);
     hig_workarea_add_row(t, &row, _("Session update interval:"), w, NULL);

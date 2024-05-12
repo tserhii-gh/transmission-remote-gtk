@@ -36,7 +36,6 @@
 #define TRG_PREFS_KEY_PROFILE_NAME             "profile-name"
 #define TRG_PREFS_KEY_HOSTNAME                 "hostname"
 #define TRG_PREFS_KEY_PORT                     "port"
-#define TRG_PREFS_KEY_MINUPDATE_INTERVAL       "min-update-interval"
 #define TRG_PREFS_KEY_USERNAME                 "username"
 #define TRG_PREFS_KEY_PASSWORD                 "password"
 #define TRG_PREFS_KEY_CUSTOM_HEADERS           "custom-headers"

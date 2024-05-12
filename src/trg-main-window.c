@@ -200,7 +200,6 @@ G_DEFINE_TYPE_WITH_PRIVATE(TrgMainWindow, trg_main_window, GTK_TYPE_WINDOW)
 enum {
     PROP_0,
     PROP_CLIENT,
-    PROP_MINIMISE_ON_START
 };
 
 static void reset_connect_args(TrgMainWindow *win)
@@ -403,9 +402,7 @@ gint trg_add_from_filename(TrgMainWindow *win, gchar **uris)
 
     if (uris) {
         for (i = 0; uris[i]; i++) {
-            if (is_minimised_arg(uris[i]))
-                g_free(uris[i]);
-            else if (uris[i])
+            if (uris[i])
                 filesList = g_slist_append(filesList, uris[i]);
         }
     }
@@ -959,9 +956,7 @@ static gboolean on_torrent_get(gpointer data, int mode)
         return FALSE;
     }
 
-    interval = gtk_widget_get_visible(GTK_WIDGET(win))
-        ? trg_prefs_get_int(prefs, TRG_PREFS_KEY_UPDATE_INTERVAL, TRG_PREFS_CONNECTION)
-        : trg_prefs_get_int(prefs, TRG_PREFS_KEY_MINUPDATE_INTERVAL, TRG_PREFS_CONNECTION);
+    interval = trg_prefs_get_int(prefs, TRG_PREFS_KEY_UPDATE_INTERVAL, TRG_PREFS_CONNECTION);
     if (interval < 1)
         interval = TRG_INTERVAL_DEFAULT;
 
@@ -1276,9 +1271,6 @@ static void trg_main_window_get_property(GObject *object, guint property_id, GVa
     case PROP_CLIENT:
         g_value_set_pointer(value, priv->client);
         break;
-    case PROP_MINIMISE_ON_START:
-        g_value_set_boolean(value, priv->min_on_start);
-        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
         break;
@@ -1294,9 +1286,6 @@ static void trg_main_window_set_property(GObject *object, guint property_id, con
     switch (property_id) {
     case PROP_CLIENT:
         priv->client = g_value_get_pointer(value);
-        break;
-    case PROP_MINIMISE_ON_START:
-        priv->min_on_start = g_value_get_boolean(value);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -1314,9 +1303,9 @@ static TrgMenuBar *trg_main_window_menu_bar_new(TrgMainWindow *win)
     TrgMainWindowPrivate *priv = trg_main_window_get_instance_private(win);
 
     GObject *b_disconnect, *b_add, *b_resume, *b_pause, *b_verify, *b_remove, *b_delete, *b_props,
-        *b_local_prefs, *b_remote_prefs, *b_about, *b_view_notebook, *b_view_stats,
-        *b_add_url, *b_quit, *b_move, *b_reannounce, *b_pause_all, *b_resume_all, *b_up_queue, 
-        *b_down_queue, *b_top_queue,*b_bottom_queue, *b_start_now, *b_copy_magnetlink;
+        *b_local_prefs, *b_remote_prefs, *b_about, *b_view_notebook, *b_view_stats, *b_add_url,
+        *b_quit, *b_move, *b_reannounce, *b_pause_all, *b_resume_all, *b_up_queue, *b_down_queue,
+        *b_top_queue, *b_bottom_queue, *b_start_now, *b_copy_magnetlink;
 
     TrgMenuBar *menuBar;
     GtkAccelGroup *accel_group;
@@ -1332,9 +1321,9 @@ static TrgMenuBar *trg_main_window_menu_bar_new(TrgMainWindow *win)
                  "delete-button", &b_delete, "remove-button", &b_remove, "move-button", &b_move,
                  "verify-button", &b_verify, "reannounce-button", &b_reannounce, "props-button",
                  &b_props, "remote-prefs-button", &b_remote_prefs, "local-prefs-button",
-                 &b_local_prefs, "view-notebook-button", &b_view_notebook, 
-                 "view-stats-button", &b_view_stats, "about-button", &b_about,
-                 "quit-button", &b_quit, "up-queue", &b_up_queue, "down-queue", &b_down_queue, "top-queue", &b_top_queue,
+                 &b_local_prefs, "view-notebook-button", &b_view_notebook, "view-stats-button",
+                 &b_view_stats, "about-button", &b_about, "quit-button", &b_quit, "up-queue",
+                 &b_up_queue, "down-queue", &b_down_queue, "top-queue", &b_top_queue,
                  "bottom-queue", &b_bottom_queue, "start-now", &b_start_now, "copymagnet-button",
                  &b_copy_magnetlink, NULL);
 
@@ -2030,11 +2019,6 @@ static void trg_main_window_class_init(TrgMainWindowClass *klass)
         object_class, PROP_CLIENT,
         g_param_spec_pointer("trg-client", "TClient", "Client",
                              G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
-
-    g_object_class_install_property(
-        object_class, PROP_MINIMISE_ON_START,
-        g_param_spec_boolean("min-on-start", "Min On Start", "Min On Start", FALSE,
-                             G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 }
 
 void trg_main_window_set_start_args(TrgMainWindow *win, gchar **args)
@@ -2058,7 +2042,7 @@ void auto_connect_if_required(TrgMainWindow *win)
     }
 }
 
-TrgMainWindow *trg_main_window_new(TrgClient *tc, gboolean minonstart)
+TrgMainWindow *trg_main_window_new(TrgClient *tc)
 {
-    return g_object_new(TRG_TYPE_MAIN_WINDOW, "trg-client", tc, "min-on-start", minonstart, NULL);
+    return g_object_new(TRG_TYPE_MAIN_WINDOW, "trg-client", tc, NULL);
 }
