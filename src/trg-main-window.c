@@ -180,8 +180,6 @@ typedef struct {
     TrgPeersModel *peersModel;
     TrgPeersTreeView *peersTreeView;
 
-    gint graphNotebookIndex;
-
     GtkWidget *hpaned, *vpaned;
     GtkWidget *filterEntry;
 
