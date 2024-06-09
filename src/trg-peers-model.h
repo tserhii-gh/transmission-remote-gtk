@@ -73,8 +73,3 @@ void trg_peers_model_update(TrgPeersModel *model, TrgTreeView *tv, gint64 update
                             JsonObject *t, gboolean first);
 
 #endif /* TRG_PEERS_MODEL_H_ */
-
-#define TRG_GEOIP_DATABASE          "/usr/share/GeoIP/GeoIP.dat"
-#define TRG_GEOIPV6_DATABASE        "/usr/share/GeoIP/GeoIPv6.dat"
-#define TRG_GEOIP_CITY_DATABASE     "/usr/share/GeoIP/GeoLiteCity.dat"
-#define TRG_GEOIP_CITY_ALT_DATABASE "/usr/share/GeoIP/GeoIPCity.dat"
