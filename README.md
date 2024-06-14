@@ -23,14 +23,6 @@ system:
 # apt install libgtk-3-dev gettext libsoup-3.0-dev libjson-glib-dev
 ```
 
-### Optional Dependencies
-The following packages are optional dependencies:
-
- - libappindicator or libayatana-appindicator3, Application tray support
-
-If these libraries are installed at build time they will be automatically
-detected and linked for additional functionality.
-
 ### Build Only Dependencies
 transmission-remote-gtk uses meson for its build system. A relatively new
 version of meson is required.
