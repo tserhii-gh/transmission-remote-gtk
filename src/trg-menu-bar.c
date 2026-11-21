@@ -106,6 +106,11 @@ struct _TrgMenuBarPrivate {
     TrgPrefs *prefs;
     TrgMainWindow *main_window;
     TrgTorrentTreeView *torrent_tree_view;
+    TrgMenu *file_menu;
+    TrgMenu *torrent_menu;
+    TrgMenu *options_menu;
+    TrgMenu *view_menu;
+    TrgMenu *help_menu;
 };
 
 void trg_menu_bar_set_supports_queues(TrgMenuBar *mb, gboolean supportsQueues)
@@ -314,13 +319,14 @@ static void view_menu_item_toggled_cb(GtkCheckButton *w, gpointer data)
 
 static void view_menu_bar_toggled_dependency_cb(GtkCheckButton *w, gpointer data)
 {
-    gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_check_button_get_active(w));
+    if (GTK_IS_WIDGET(data))
+        gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_check_button_get_active(w));
 }
 
 static void trg_menu_bar_view_item_update(TrgPrefs *p, const gchar *updatedKey, gpointer data)
 {
     const gchar *key = (gchar *)g_object_get_data(G_OBJECT(data), G_DATAKEY_CONF_KEY);
-    if (!g_strcmp0(updatedKey, key))
+    if (!g_strcmp0(updatedKey, key) && GTK_IS_CHECK_BUTTON(data))
         gtk_check_button_set_active(GTK_CHECK_BUTTON(data),
                                     trg_prefs_get_bool(p, key, TRG_PREFS_GLOBAL));
 }
@@ -498,6 +504,35 @@ static TrgMenu *trg_menu_bar_help_menu_new(TrgMenuBar *menuBar)
     return helpMenu;
 }
 
+static TrgMenu *trg_menu_bar_app_menu_new(TrgMenuBar *menuBar)
+{
+    TrgMenuBarPrivate *priv = TRG_MENU_BAR_GET_PRIVATE(menuBar);
+    TrgMenu *appMenu = trg_menu_new();
+
+    trg_menu_append_submenu(appMenu, _("_File"), NULL, priv->file_menu);
+    trg_menu_append_submenu(appMenu, _("_Torrent"), NULL, priv->torrent_menu);
+    trg_menu_append_submenu(appMenu, _("_Options"), NULL, priv->options_menu);
+    trg_menu_append_submenu(appMenu, _("_View"), NULL, priv->view_menu);
+    trg_menu_append_submenu(appMenu, _("_Help"), NULL, priv->help_menu);
+
+    return appMenu;
+}
+
+GtkWidget *trg_menu_bar_app_menu_button_new(TrgMenuBar *menuBar)
+{
+    TrgMenu *appMenu = trg_menu_bar_app_menu_new(menuBar);
+    GtkWidget *button = gtk_menu_button_new();
+    GtkWidget *image = gtk_image_new_from_icon_name("open-menu-symbolic");
+
+    gtk_image_set_pixel_size(GTK_IMAGE(image), 16);
+    gtk_menu_button_set_child(GTK_MENU_BUTTON(button), image);
+    gtk_menu_button_set_popover(GTK_MENU_BUTTON(button), trg_menu_get_widget(appMenu));
+    gtk_widget_add_css_class(button, "flat");
+    gtk_widget_set_tooltip_text(button, _("Application Menu"));
+
+    return button;
+}
+
 static void menu_bar_refresh_menu(GtkWidget *w, gpointer data)
 {
     TrgMenuBarPrivate *priv = TRG_MENU_BAR_GET_PRIVATE(data);
@@ -519,7 +554,6 @@ static GObject *trg_menu_bar_constructor(GType type, guint n_construct_propertie
     GObject *object;
     TrgMenuBarPrivate *priv;
     TrgMenuBar *menu;
-    TrgMenu *fileMenu, *torrentMenu, *optionsMenu, *viewMenu, *helpMenu;
 
     object = G_OBJECT_CLASS(trg_menu_bar_parent_class)
                  ->constructor(type, n_construct_properties, construct_params);
@@ -534,17 +568,13 @@ static GObject *trg_menu_bar_constructor(GType type, guint n_construct_propertie
                                       GTK_SHORTCUT_SCOPE_GLOBAL);
     gtk_widget_add_controller(GTK_WIDGET(object), priv->accel_controller);
 
-    fileMenu = trg_menu_bar_file_file_menu_new(menu);
-    torrentMenu = trg_menu_bar_torrent_menu_new(menu);
-    optionsMenu = trg_menu_bar_options_menu_new(menu);
-    viewMenu = trg_menu_bar_view_menu_new(menu);
-    helpMenu = trg_menu_bar_help_menu_new(menu);
+    priv->file_menu = trg_menu_bar_file_file_menu_new(menu);
+    priv->torrent_menu = trg_menu_bar_torrent_menu_new(menu);
+    priv->options_menu = trg_menu_bar_options_menu_new(menu);
+    priv->view_menu = trg_menu_bar_view_menu_new(menu);
+    priv->help_menu = trg_menu_bar_help_menu_new(menu);
 
-    gtk_box_append(GTK_BOX(object), trg_menu_bar_button_new(_("_File"), fileMenu));
-    gtk_box_append(GTK_BOX(object), trg_menu_bar_button_new(_("_Torrent"), torrentMenu));
-    gtk_box_append(GTK_BOX(object), trg_menu_bar_button_new(_("_Options"), optionsMenu));
-    gtk_box_append(GTK_BOX(object), trg_menu_bar_button_new(_("_View"), viewMenu));
-    gtk_box_append(GTK_BOX(object), trg_menu_bar_button_new(_("_Help"), helpMenu));
+    /* Menu bar is hidden, so don't add buttons to it. Menus are used by app menu button instead. */
 
     g_signal_connect(G_OBJECT(priv->prefs), "pref-profile-changed",
                      G_CALLBACK(menu_bar_refresh_menu), object);

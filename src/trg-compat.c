@@ -139,8 +139,13 @@ gint trg_dialog_run(GtkDialog *dialog)
     gtk_window_present(GTK_WINDOW(dialog));
     g_main_loop_run(data.loop);
 
-    g_signal_handler_disconnect(dialog, response_id);
-    g_signal_handler_disconnect(dialog, close_id);
+    /* Dialog may have been destroyed with parent, check before disconnecting */
+    if (G_IS_OBJECT(dialog)) {
+        if (g_signal_handler_is_connected(dialog, response_id))
+            g_signal_handler_disconnect(dialog, response_id);
+        if (g_signal_handler_is_connected(dialog, close_id))
+            g_signal_handler_disconnect(dialog, close_id);
+    }
     g_main_loop_unref(data.loop);
 
     return data.response;

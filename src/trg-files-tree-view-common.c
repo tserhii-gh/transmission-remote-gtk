@@ -152,11 +152,8 @@ static gboolean getAndSelectEventPath(GtkTreeView *treeview, double x, double y,
     GtkTreeSelection *sel;
 
     if (gtk_tree_view_get_path_at_pos(treeview, (int)x, (int)y, path, col, NULL, NULL)) {
-        sel = gtk_tree_view_get_selection(treeview);
-        if (!gtk_tree_selection_path_is_selected(sel, *path)) {
-            gtk_tree_selection_unselect_all(sel);
-            gtk_tree_selection_select_path(sel, *path);
-        }
+        /* Don't manually select - let the tree view's built-in handling do it.
+         * Just return the path at the click position. */
         return TRUE;
     }
 

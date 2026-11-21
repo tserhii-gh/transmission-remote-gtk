@@ -660,7 +660,7 @@ trg_torrent_model_update_stats *trg_torrent_model_update(TrgTorrentModel *model,
 
     g_list_free(torrentList);
 
-    if (mode == TORRENT_GET_MODE_UPDATE) {
+    if (mode >= TORRENT_GET_MODE_INTERACTION) {
         GList *hitlist = trg_torrent_model_find_removed(GTK_TREE_MODEL(model), serial);
         if (hitlist) {
             for (li = hitlist; li; li = g_list_next(li)) {

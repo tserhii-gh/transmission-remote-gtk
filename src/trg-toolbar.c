@@ -140,14 +140,10 @@ static GtkWidget *trg_toolbar_item_new(TrgToolbar *toolbar, const gchar *text, g
                                        gboolean sensitive)
 {
     GtkWidget *button = gtk_button_new();
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     GtkWidget *image = gtk_image_new_from_icon_name(icon);
-    GtkWidget *label = gtk_label_new(text);
 
     gtk_image_set_pixel_size(GTK_IMAGE(image), 16);
-    gtk_box_append(GTK_BOX(box), image);
-    gtk_box_append(GTK_BOX(box), label);
-    gtk_button_set_child(GTK_BUTTON(button), box);
+    gtk_button_set_child(GTK_BUTTON(button), image);
     gtk_widget_add_css_class(button, "flat");
     gtk_widget_set_sensitive(button, sensitive);
     gtk_widget_set_tooltip_text(button, text);

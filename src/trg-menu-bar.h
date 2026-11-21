@@ -55,5 +55,6 @@ void trg_menu_bar_torrent_actions_sensitive(TrgMenuBar *mb, gboolean sensitive);
 void trg_menu_bar_connected_change(TrgMenuBar *mb, gboolean connected);
 void trg_menu_bar_set_supports_queues(TrgMenuBar *mb, gboolean supportsQueues);
 TrgMenu *trg_menu_bar_file_connect_menu_new(TrgMainWindow *win, TrgPrefs *p);
+GtkWidget *trg_menu_bar_app_menu_button_new(TrgMenuBar *menuBar);
 
 #endif /* TRG_MENU_BAR_H_ */

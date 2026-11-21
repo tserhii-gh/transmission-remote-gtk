@@ -77,7 +77,7 @@ static void torrent_event_notification(TrgTorrentModel *model, gchar *icon_name,
                                        gchar *prefKey, GtkTreeIter *iter, gpointer data);
 static void on_torrent_completed(TrgTorrentModel *model, GtkTreeIter *iter, gpointer data);
 static void on_torrent_added(TrgTorrentModel *model, GtkTreeIter *iter, gpointer data);
-static gboolean delete_event(GtkWindow *w, gpointer data);
+static gboolean close_request(GtkWindow *w, gpointer data);
 static void destroy_window(TrgMainWindow *win, gpointer data G_GNUC_UNUSED);
 static void torrent_tv_onRowActivated(GtkTreeView *treeview, GtkTreePath *path,
                                       GtkTreeViewColumn *col, gpointer userdata);
@@ -266,13 +266,9 @@ static void on_torrent_added(TrgTorrentModel *model, GtkTreeIter *iter, gpointer
                                TRG_PREFS_KEY_ADD_NOTIFY, iter, data);
 }
 
-static gboolean delete_event(GtkWindow *w G_GNUC_UNUSED, gpointer data G_GNUC_UNUSED)
+static gboolean close_request(GtkWindow *w, gpointer data G_GNUC_UNUSED)
 {
-    return FALSE;
-}
-
-static void destroy_window(TrgMainWindow *win, gpointer data G_GNUC_UNUSED)
-{
+    TrgMainWindow *win = TRG_MAIN_WINDOW(w);
     TrgMainWindowPrivate *priv = trg_main_window_get_instance_private(win);
     TrgPrefs *prefs = trg_client_get_prefs(priv->client);
 
@@ -299,6 +295,13 @@ static void destroy_window(TrgMainWindow *win, gpointer data G_GNUC_UNUSED)
     trg_prefs_save(prefs);
 
     g_application_quit(g_application_get_default());
+
+    return FALSE;
+}
+
+static void destroy_window(TrgMainWindow *win, gpointer data G_GNUC_UNUSED)
+{
+    (void)win;
 }
 
 static void open_props_cb(GtkWidget *w G_GNUC_UNUSED, TrgMainWindow *win)
@@ -1678,7 +1681,7 @@ static GObject *trg_main_window_constructor(GType type, guint n_construct_proper
     gtk_window_set_title(GTK_WINDOW(self), _("Transmission Remote"));
     gtk_window_set_default_size(GTK_WINDOW(self), 1000, 600);
 
-    g_signal_connect(G_OBJECT(self), "close-request", G_CALLBACK(delete_event), NULL);
+    g_signal_connect(G_OBJECT(self), "close-request", G_CALLBACK(close_request), NULL);
     g_signal_connect(G_OBJECT(self), "destroy", G_CALLBACK(destroy_window), NULL);
     trg_widget_add_key_handler(GTK_WIDGET(self), G_CALLBACK(window_key_press_handler), NULL);
 
@@ -1707,12 +1710,18 @@ static GObject *trg_main_window_constructor(GType type, guint n_construct_proper
 
     trg_container_add(self, outerVbox);
 
-    priv->menuBar = trg_main_window_menu_bar_new(self);
-    trg_box_pack(outerVbox, GTK_WIDGET(priv->menuBar), FALSE, FALSE, 0);
-
     toolbarHbox = trg_hbox_new(FALSE, 0);
     priv->toolBar = trg_main_window_toolbar_new(self);
     trg_box_pack(toolbarHbox, GTK_WIDGET(priv->toolBar), TRUE, TRUE, 0);
+
+    /* Add application menu button on the right side of toolbar */
+    priv->menuBar = trg_main_window_menu_bar_new(self);
+    /* Pack menuBar into the hierarchy so it gets destroyed properly, but keep it hidden */
+    gtk_widget_set_visible(GTK_WIDGET(priv->menuBar), FALSE);
+    trg_box_pack(outerVbox, GTK_WIDGET(priv->menuBar), FALSE, FALSE, 0);
+    GtkWidget *appMenuButton = trg_menu_bar_app_menu_button_new(priv->menuBar);
+    gtk_widget_set_halign(appMenuButton, GTK_ALIGN_END);
+    trg_box_pack(toolbarHbox, appMenuButton, FALSE, FALSE, 0);
 
     trg_box_pack(outerVbox, GTK_WIDGET(toolbarHbox), FALSE, FALSE, 0);
 
