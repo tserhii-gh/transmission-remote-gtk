@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <json-glib/json-glib.h>
@@ -60,8 +62,8 @@ static void show_dht_not_enabled_warning(TrgTorrentAddUrlDialog *dlg)
     GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(dlg), GTK_DIALOG_MODAL,
                                                GTK_MESSAGE_WARNING, GTK_BUTTONS_OK, "%s", msg);
     gtk_window_set_title(GTK_WINDOW(dialog), _("Error"));
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
+    trg_dialog_run(GTK_DIALOG(dialog));
+    trg_widget_destroy(dialog);
 }
 
 static void trg_torrent_add_url_response_cb(TrgTorrentAddUrlDialog *dlg, gint res_id, gpointer data)
@@ -70,7 +72,7 @@ static void trg_torrent_add_url_response_cb(TrgTorrentAddUrlDialog *dlg, gint re
 
     if (res_id == GTK_RESPONSE_ACCEPT) {
         JsonNode *request;
-        const gchar *entryText = gtk_entry_get_text(GTK_ENTRY(priv->urlEntry));
+        const gchar *entryText = gtk_editable_get_text(GTK_EDITABLE(priv->urlEntry));
 
         if (g_str_has_prefix(entryText, "magnet:") && !has_dht_support(dlg))
             show_dht_not_enabled_warning(dlg);
@@ -80,7 +82,7 @@ static void trg_torrent_add_url_response_cb(TrgTorrentAddUrlDialog *dlg, gint re
         dispatch_rpc_async(priv->client, request, on_generic_interactive_action_response, data);
     }
 
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    trg_widget_destroy(GTK_WIDGET(dlg));
 }
 
 static void url_entry_changed(GtkWidget *w, gpointer data)
@@ -94,14 +96,24 @@ static void url_entry_activate(GtkWidget *w, gpointer data)
     gtk_dialog_response(GTK_DIALOG(data), GTK_RESPONSE_ACCEPT);
 }
 
-static void clipboard_text_received(GtkClipboard *w, const char *text, void *text_widget)
+static void clipboard_text_received(GObject *source, GAsyncResult *result, gpointer text_widget)
 {
-    if (text && g_regex_match_simple("^(https?|magnet):", text, 0, 0)) {
-        GtkEntry *e = GTK_ENTRY(text_widget);
-        if (g_strcmp0("", gtk_entry_get_text(e)) == 0) {
-            gtk_entry_set_text(e, text);
-        }
+    GError *error = NULL;
+    gchar *text = gdk_clipboard_read_text_finish(GDK_CLIPBOARD(source), result, &error);
+
+    if (text != NULL && GTK_IS_EDITABLE(text_widget)
+        && g_regex_match_simple("^(https?|magnet):", text, 0, 0)) {
+        GtkEditable *e = GTK_EDITABLE(text_widget);
+
+        if (g_strcmp0("", gtk_editable_get_text(e)) == 0)
+            gtk_editable_set_text(e, text);
     }
+
+    g_free(text);
+    g_clear_error(&error);
+
+    if (text_widget != NULL)
+        g_object_unref(text_widget);
 }
 
 static void trg_torrent_add_url_dialog_init(TrgTorrentAddUrlDialog *self)
@@ -117,8 +129,9 @@ static void trg_torrent_add_url_dialog_init(TrgTorrentAddUrlDialog *self)
     w = priv->urlEntry = gtk_entry_new();
     g_signal_connect(w, "changed", G_CALLBACK(url_entry_changed), self);
     g_signal_connect(w, "activate", G_CALLBACK(url_entry_activate), self);
-    GtkClipboard *cb = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-    gtk_clipboard_request_text(cb, clipboard_text_received, w);
+    GdkClipboard *cb = gdk_display_get_clipboard(gdk_display_get_default());
+
+    gdk_clipboard_read_text_async(cb, NULL, clipboard_text_received, g_object_ref(w));
 
     hig_workarea_add_row(t, &row, _("URL:"), w, NULL);
 
@@ -131,13 +144,13 @@ static void trg_torrent_add_url_dialog_init(TrgTorrentAddUrlDialog *self)
     priv->addButton = gtk_dialog_add_button(GTK_DIALOG(self), _("_Add"), GTK_RESPONSE_ACCEPT);
     gtk_widget_set_sensitive(priv->addButton, FALSE);
 
-    gtk_container_set_border_width(GTK_CONTAINER(self), GUI_PAD);
+    trg_container_set_border_width(self, GUI_PAD);
 
     gtk_dialog_set_default_response(GTK_DIALOG(self), GTK_RESPONSE_ACCEPT);
 
-    gtk_container_set_border_width(GTK_CONTAINER(t), GUI_PAD);
+    trg_container_set_border_width(t, GUI_PAD);
 
-    gtk_box_pack_start(GTK_BOX(contentvbox), t, TRUE, TRUE, 0);
+    trg_box_pack(contentvbox, t, TRUE, TRUE, 0);
 }
 
 TrgTorrentAddUrlDialog *trg_torrent_add_url_dialog_new(TrgMainWindow *win, TrgClient *client)

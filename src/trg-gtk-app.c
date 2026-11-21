@@ -75,6 +75,7 @@ static void trg_gtk_app_startup(GApplication *app, gpointer userdata)
     TrgGtkAppPrivate *priv = trg_gtk_app_get_instance_private(TRG_GTK_APP(app));
     TrgMainWindow *window = trg_main_window_new(priv->client);
     gtk_window_set_application(GTK_WINDOW(window), GTK_APPLICATION(app));
+    gtk_window_present(GTK_WINDOW(window));
 }
 
 static int trg_gtk_app_command_line(GApplication *application, GApplicationCommandLine *cmdline)

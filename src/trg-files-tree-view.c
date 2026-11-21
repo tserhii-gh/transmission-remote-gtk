@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
@@ -122,7 +124,7 @@ static void rename_file(GtkWidget *w G_GNUC_UNUSED, gpointer data)
 {
     TrgFilesTreeView *tv = TRG_FILES_TREE_VIEW(data);
     TrgFilesTreeViewPrivate *priv = TRG_FILES_TREE_VIEW_GET_PRIVATE(tv);
-    gtk_widget_show_all(GTK_WIDGET(trg_file_rename_dialog_new(priv->win, priv->client, tv)));
+    trg_widget_show_all(GTK_WIDGET(trg_file_rename_dialog_new(priv->win, priv->client, tv)));
 }
 
 static void set_low(GtkWidget *w G_GNUC_UNUSED, gpointer data)
@@ -155,17 +157,16 @@ static void set_wanted(GtkWidget *w G_GNUC_UNUSED, gpointer data)
     send_updated_file_prefs(TRG_FILES_TREE_VIEW(data));
 }
 
-static gboolean view_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
+static void view_onButtonPressed(GtkWidget *treeview, int button, double x, double y,
+                                GdkModifierType state, gpointer userdata)
 {
     gboolean handled = trg_files_tree_view_onViewButtonPressed(
-        treeview, event, -1, FILESCOL_WANTED, G_CALLBACK(rename_file), G_CALLBACK(set_low),
-        G_CALLBACK(set_normal), G_CALLBACK(set_high), G_CALLBACK(set_wanted),
+        treeview, button, x, y, state, -1, FILESCOL_WANTED, G_CALLBACK(rename_file),
+        G_CALLBACK(set_low), G_CALLBACK(set_normal), G_CALLBACK(set_high), G_CALLBACK(set_wanted),
         G_CALLBACK(set_unwanted), userdata);
 
     if (handled)
         send_updated_file_prefs(TRG_FILES_TREE_VIEW(treeview));
-
-    return handled;
 }
 
 static gboolean search_func(GtkTreeModel *model, gint column, const gchar *key, GtkTreeIter *iter,
@@ -206,8 +207,7 @@ static void trg_files_tree_view_init(TrgFilesTreeView *self)
                                         (GtkTreeViewSearchEqualFunc)search_func,
                                         gtk_tree_view_get_model(GTK_TREE_VIEW(self)), NULL);
 
-    g_signal_connect(self, "button-press-event", G_CALLBACK(view_onButtonPressed), NULL);
-    g_signal_connect(self, "popup-menu", G_CALLBACK(trg_files_tree_view_viewOnPopupMenu), NULL);
+    trg_widget_add_click_handler(GTK_WIDGET(self), G_CALLBACK(view_onButtonPressed), NULL);
 }
 
 TrgFilesTreeView *trg_files_tree_view_new(TrgFilesModel *model, TrgMainWindow *win,

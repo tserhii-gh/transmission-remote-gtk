@@ -36,11 +36,11 @@ G_BEGIN_DECLS
 #define TRG_TOOLBAR_GET_CLASS(obj)                                                                 \
     (G_TYPE_INSTANCE_GET_CLASS((obj), TRG_TYPE_TOOLBAR, TrgToolbarClass))
 typedef struct {
-    GtkToolbar parent;
+    GtkBox parent;
 } TrgToolbar;
 
 typedef struct {
-    GtkToolbarClass parent_class;
+    GtkBoxClass parent_class;
 } TrgToolbarClass;
 
 GType trg_toolbar_get_type(void);

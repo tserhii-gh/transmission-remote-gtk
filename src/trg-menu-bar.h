@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 
 #include "trg-main-window.h"
+#include "trg-menu.h"
 #include "trg-prefs.h"
 #include "trg-torrent-tree-view.h"
 
@@ -37,23 +38,22 @@ G_BEGIN_DECLS
 #define TRG_MENU_BAR_GET_CLASS(obj)                                                                \
     (G_TYPE_INSTANCE_GET_CLASS((obj), TRG_TYPE_MENU_BAR, TrgMenuBarClass))
 typedef struct {
-    GtkMenuBar parent;
+    GtkBox parent;
 } TrgMenuBar;
 
 typedef struct {
-    GtkMenuBarClass parent_class;
+    GtkBoxClass parent_class;
 } TrgMenuBarClass;
 
 GType trg_menu_bar_get_type(void);
 
-TrgMenuBar *trg_menu_bar_new(TrgMainWindow *win, TrgPrefs *prefs, TrgTorrentTreeView *ttv,
-                             GtkAccelGroup *accel_group);
-GtkWidget *trg_menu_bar_item_new(GtkMenuShell *shell, const gchar *text, gboolean sensitive);
+TrgMenuBar *trg_menu_bar_new(TrgMainWindow *win, TrgPrefs *prefs, TrgTorrentTreeView *ttv);
+GtkWidget *trg_menu_bar_item_new(TrgMenu *menu, const gchar *text, gboolean sensitive);
 
 G_END_DECLS
 void trg_menu_bar_torrent_actions_sensitive(TrgMenuBar *mb, gboolean sensitive);
 void trg_menu_bar_connected_change(TrgMenuBar *mb, gboolean connected);
 void trg_menu_bar_set_supports_queues(TrgMenuBar *mb, gboolean supportsQueues);
-GtkWidget *trg_menu_bar_file_connect_menu_new(TrgMainWindow *win, TrgPrefs *p);
+TrgMenu *trg_menu_bar_file_connect_menu_new(TrgMainWindow *win, TrgPrefs *p);
 
 #endif /* TRG_MENU_BAR_H_ */

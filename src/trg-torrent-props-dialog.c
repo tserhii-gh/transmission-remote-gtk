@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <json-glib/json-glib.h>
@@ -139,7 +141,9 @@ static void trg_torrent_props_response_cb(GtkDialog *dialog, gint res_id,
     if (priv->show_details) {
         TrgPrefs *prefs = trg_client_get_prefs(priv->client);
         gint width, height;
-        gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
+
+        width = gtk_widget_get_width(GTK_WIDGET(dialog));
+        height = gtk_widget_get_height(GTK_WIDGET(dialog));
         trg_prefs_set_int(prefs, "dialog-width", width, TRG_PREFS_GLOBAL);
         trg_prefs_set_int(prefs, "dialog-height", height, TRG_PREFS_GLOBAL);
 
@@ -169,7 +173,7 @@ static void trg_torrent_props_response_cb(GtkDialog *dialog, gint res_id,
                            priv->parent);
     }
 
-    gtk_widget_destroy(GTK_WIDGET(dialog));
+    trg_widget_destroy(GTK_WIDGET(dialog));
 }
 
 static void seed_ratio_mode_changed_cb(GtkWidget *w, gpointer data)
@@ -261,14 +265,13 @@ static GtkWidget *info_page_new(TrgTorrentPropsDialog *dialog)
     w = gtk_text_view_new_with_buffer(b);
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(w), GTK_WRAP_WORD);
     gtk_text_view_set_editable(GTK_TEXT_VIEW(w), FALSE);
-    sw = gtk_scrolled_window_new(NULL, NULL);
+    sw = gtk_scrolled_window_new();
     gtk_widget_set_size_request(sw, 350, 36);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
-    gtk_container_add(GTK_CONTAINER(sw), w);
+    trg_container_add(sw, w);
     fr = gtk_frame_new(NULL);
-    gtk_frame_set_shadow_type(GTK_FRAME(fr), GTK_SHADOW_IN);
-    gtk_container_add(GTK_CONTAINER(fr), sw);
+    trg_container_add(fr, sw);
     w = hig_workarea_add_tall_row(t, &row, _("Comment:"), fr, NULL);
     gtk_widget_set_halign(w, GTK_ALIGN_START);
     gtk_widget_set_valign(w, GTK_ALIGN_START);
@@ -491,7 +494,7 @@ static GObject *trg_torrent_props_dialog_constructor(GType type, guint n_constru
     gtk_dialog_add_button(GTK_DIALOG(object), _("_Close"), GTK_RESPONSE_CLOSE);
     gtk_dialog_add_button(GTK_DIALOG(object), _("_OK"), GTK_RESPONSE_OK);
 
-    gtk_container_set_border_width(GTK_CONTAINER(object), GUI_PAD);
+    trg_container_set_border_width(GTK_WIDGET(object), GUI_PAD);
 
     gtk_dialog_set_default_response(GTK_DIALOG(object), GTK_RESPONSE_OK);
 
@@ -556,10 +559,10 @@ static GObject *trg_torrent_props_dialog_constructor(GType type, guint n_constru
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), trg_props_limits_page_new(propsDialog, json),
                              gtk_label_new(_("Limits")));
 
-    gtk_container_set_border_width(GTK_CONTAINER(notebook), GUI_PAD);
+    trg_container_set_border_width(notebook, GUI_PAD);
 
     contentvbox = gtk_dialog_get_content_area(GTK_DIALOG(object));
-    gtk_box_pack_start(GTK_BOX(contentvbox), notebook, TRUE, TRUE, 0);
+    trg_box_pack(contentvbox, notebook, TRUE, TRUE, 0);
 
     if (priv->show_details) {
         TrgPrefs *prefs = trg_client_get_prefs(priv->client);

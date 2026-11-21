@@ -57,8 +57,8 @@ enum {
 
 #define DEFAULT_BAR_HEIGHT 12
 #define SMALL_SCALE        0.9
-#define COMPACT_ICON_SIZE  GTK_ICON_SIZE_MENU
-#define FULL_ICON_SIZE     GTK_ICON_SIZE_DND
+#define COMPACT_ICON_SIZE  16
+#define FULL_ICON_SIZE     32
 
 #define FOREGROUND_COLOR_KEY "foreground-rgba"
 typedef GdkRGBA GtrColor;
@@ -330,7 +330,7 @@ static void getStatusString(GString *gstr, TorrentCellRenderer *r)
 ****
 ***/
 
-static GdkPixbuf *get_icon(TorrentCellRenderer *r, GtkIconSize icon_size, GtkWidget *for_widget)
+static GdkPixbuf *get_icon(TorrentCellRenderer *r, int icon_size, GtkWidget *for_widget)
 {
     struct TorrentCellRendererPrivate *p = r->priv;
 
@@ -451,36 +451,41 @@ static void get_size_full(TorrentCellRenderer *cell, GtkWidget *widget, gint *wi
     g_object_unref(icon);
 }
 
-static void torrent_cell_renderer_get_size(GtkCellRenderer *cell, GtkWidget *widget,
-                                           const GdkRectangle *cell_area, gint *x_offset,
-                                           gint *y_offset, gint *width, gint *height)
+static void torrent_cell_renderer_get_size(TorrentCellRenderer *cell, GtkWidget *widget,
+                                           gint *width, gint *height)
 {
-    TorrentCellRenderer *self = TORRENT_CELL_RENDERER(cell);
+    struct TorrentCellRendererPrivate *p = cell->priv;
 
-    if (self) {
-        int w, h;
-        struct TorrentCellRendererPrivate *p = self->priv;
+    if (p->compact)
+        get_size_compact(cell, widget, width, height);
+    else
+        get_size_full(cell, widget, width, height);
+}
 
-        if (p->compact)
-            get_size_compact(TORRENT_CELL_RENDERER(cell), widget, &w, &h);
-        else
-            get_size_full(TORRENT_CELL_RENDERER(cell), widget, &w, &h);
+static void torrent_cell_renderer_get_preferred_width(GtkCellRenderer *cell, GtkWidget *widget,
+                                                      gint *minimum_size, gint *natural_size)
+{
+    gint width = 0;
 
-        if (width)
-            *width = w;
+    torrent_cell_renderer_get_size(TORRENT_CELL_RENDERER(cell), widget, &width, NULL);
 
-        if (height)
-            *height = h;
+    if (minimum_size)
+        *minimum_size = width;
+    if (natural_size)
+        *natural_size = width;
+}
 
-        if (x_offset)
-            *x_offset = cell_area ? cell_area->x : 0;
+static void torrent_cell_renderer_get_preferred_height(GtkCellRenderer *cell, GtkWidget *widget,
+                                                       gint *minimum_size, gint *natural_size)
+{
+    gint height = 0;
 
-        if (y_offset) {
-            int xpad, ypad;
-            gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
-            *y_offset = cell_area ? (int)((cell_area->height - (ypad * 2 + h)) / 2.0) : 0;
-        }
-    }
+    torrent_cell_renderer_get_size(TORRENT_CELL_RENDERER(cell), widget, NULL, &height);
+
+    if (minimum_size)
+        *minimum_size = height;
+    if (natural_size)
+        *natural_size = height;
 }
 
 static void get_text_color(TorrentCellRenderer *r, GtkWidget *widget, GtrColor *setme)
@@ -490,12 +495,8 @@ static void get_text_color(TorrentCellRenderer *r, GtkWidget *widget, GtrColor *
 
     if (p->error)
         *setme = red;
-    else if (p->flags & TORRENT_FLAG_PAUSED)
-        gtk_style_context_get_color(gtk_widget_get_style_context(widget),
-                                    GTK_STATE_FLAG_INSENSITIVE, setme);
     else
-        gtk_style_context_get_color(gtk_widget_get_style_context(widget), GTK_STATE_FLAG_NORMAL,
-                                    setme);
+        gtk_style_context_get_color(gtk_widget_get_style_context(widget), setme);
 }
 
 static double get_percent_done(TorrentCellRenderer *r, gboolean *seed)
@@ -519,26 +520,52 @@ static double get_percent_done(TorrentCellRenderer *r, gboolean *seed)
     return d;
 }
 
-static void gtr_cell_renderer_render(GtkCellRenderer *renderer, GtrDrawable *drawable,
-                                     GtkWidget *widget, const GdkRectangle *area,
-                                     GtkCellRendererState flags)
+static void gtr_cell_renderer_render(GtkCellRenderer *renderer, cairo_t *cr, GtkWidget *widget,
+                                     const GdkRectangle *cell_area, GtkCellRendererState flags)
 {
-    gtk_cell_renderer_render(renderer, drawable, widget, area, area, flags);
+    GtkSnapshot *snapshot = gtk_snapshot_new();
+    graphene_rect_t bounds;
+    GskRenderNode *node;
+
+    graphene_rect_init(&bounds, cell_area->x, cell_area->y, cell_area->width, cell_area->height);
+    gtk_snapshot_push_clip(snapshot, &bounds);
+    GTK_CELL_RENDERER_GET_CLASS(renderer)->snapshot(renderer, snapshot, widget, cell_area,
+                                                    cell_area, flags);
+    gtk_snapshot_pop(snapshot);
+
+    node = gtk_snapshot_free_to_node(snapshot);
+    if (node != NULL) {
+        gsk_render_node_draw(node, cr);
+        gsk_render_node_unref(node);
+    }
 }
 
-static void torrent_cell_renderer_render(GtkCellRenderer *cell, GtrDrawable *window,
-                                         GtkWidget *widget, const GdkRectangle *background_area,
-                                         const GdkRectangle *cell_area, GtkCellRendererState flags)
+static void torrent_cell_renderer_snapshot(GtkCellRenderer *cell, GtkSnapshot *snapshot,
+                                           GtkWidget *widget, const GdkRectangle *background_area,
+                                           const GdkRectangle *cell_area,
+                                           GtkCellRendererState flags)
 {
     TorrentCellRenderer *self = TORRENT_CELL_RENDERER(cell);
+    graphene_rect_t bounds;
+    cairo_t *cr;
 
-    if (self) {
-        struct TorrentCellRendererPrivate *p = self->priv;
-        if (p->compact)
-            render_compact(self, window, widget, background_area, cell_area, flags);
-        else
-            render_full(self, window, widget, background_area, cell_area, flags);
-    }
+    if (self == NULL)
+        return;
+
+    graphene_rect_init(&bounds, background_area->x, background_area->y, background_area->width,
+                       background_area->height);
+    cr = gtk_snapshot_append_cairo(snapshot, &bounds);
+
+    /* The render code below uses cell coordinates, while the cairo node is
+     * positioned at background_area. */
+    cairo_translate(cr, -background_area->x, -background_area->y);
+
+    if (self->priv->compact)
+        render_compact(self, cr, widget, background_area, cell_area, flags);
+    else
+        render_full(self, cr, widget, background_area, cell_area, flags);
+
+    cairo_destroy(cr);
 }
 
 static void torrent_cell_renderer_set_property(GObject *object, guint property_id, const GValue *v,
@@ -663,8 +690,9 @@ static void torrent_cell_renderer_class_init(TorrentCellRendererClass *klass)
 
     g_type_class_add_private(klass, sizeof(struct TorrentCellRendererPrivate));
 
-    cell_class->render = torrent_cell_renderer_render;
-    cell_class->get_size = torrent_cell_renderer_get_size;
+    cell_class->snapshot = torrent_cell_renderer_snapshot;
+    cell_class->get_preferred_width = torrent_cell_renderer_get_preferred_width;
+    cell_class->get_preferred_height = torrent_cell_renderer_get_preferred_height;
     gobject_class->set_property = torrent_cell_renderer_set_property;
     gobject_class->get_property = torrent_cell_renderer_get_property;
     gobject_class->dispose = torrent_cell_renderer_dispose;

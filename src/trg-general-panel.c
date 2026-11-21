@@ -322,7 +322,12 @@ TrgGeneralPanel *trg_general_panel_new(GtkTreeModel *model, TrgClient *tc)
     TrgGeneralPanelPrivate *priv;
 
     obj = g_object_new(TRG_TYPE_GENERAL_PANEL, "row-homogeneous", FALSE, "row-spacing", 6,
-                       "column-spacing", 8, "margin", 10, NULL);
+                       "column-spacing", 8, NULL);
+
+    gtk_widget_set_margin_top(GTK_WIDGET(obj), 10);
+    gtk_widget_set_margin_bottom(GTK_WIDGET(obj), 10);
+    gtk_widget_set_margin_start(GTK_WIDGET(obj), 10);
+    gtk_widget_set_margin_end(GTK_WIDGET(obj), 10);
 
     priv = TRG_GENERAL_PANEL_GET_PRIVATE(obj);
     priv->model = model;

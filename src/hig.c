@@ -12,6 +12,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include "hig.h"
 #include <gtk/gtk.h>
 
@@ -19,7 +21,7 @@ GtkWidget *hig_workarea_create(void)
 {
     GtkWidget *grid = gtk_grid_new();
 
-    gtk_container_set_border_width(GTK_CONTAINER(grid), GUI_PAD_BIG);
+    trg_container_set_border_width(grid, GUI_PAD_BIG);
     gtk_grid_set_row_spacing(GTK_GRID(grid), GUI_PAD);
     gtk_grid_set_column_spacing(GTK_GRID(grid), GUI_PAD_BIG);
 
@@ -127,8 +129,8 @@ GtkWidget *hig_workarea_add_tall_row(GtkWidget *table, guint *row, const char *m
     GtkWidget *l = gtk_label_new_with_mnemonic(mnemonic_string);
     GtkWidget *h = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_box_pack_start(GTK_BOX(h), l, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(v), h, FALSE, FALSE, GUI_PAD_SMALL);
+    trg_box_pack(h, l, FALSE, FALSE, 0);
+    trg_box_pack(v, h, FALSE, FALSE, GUI_PAD_SMALL);
 
     hig_workarea_add_label_w(table, *row, v);
     hig_workarea_add_tall_control(table, *row, control);

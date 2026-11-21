@@ -18,10 +18,10 @@ i18n = import('i18n')
 
 
 # glib version info
-glib_version = '2.70'
+glib_version = '2.84'
 glib_max_version = glib_version
-# While we actually depend on 2.70 because of libsoup3 we have some deprecated usage that we'll deal with later so this silences it for now.
-glib_min_version = '2.56'
+# GTK4 (>= 4.22) requires GLib 2.84.
+glib_min_version = '2.84'
 glib_version_str = '>= @0@'.format(glib_version)
 
 # glib API configuration
@@ -36,7 +36,7 @@ glib_min_def = '-DGLIB_VERSION_MIN_REQUIRED=@0@'.format(glib_min)
 add_project_arguments(glib_min_def, glib_max_def, language: 'c')
 
 # required dependencies
-gtk_dep     = dependency('gtk+-3.0', version: '>= 3.22')
+gtk_dep     = dependency('gtk4', version: '>= 4.10')
 gio_dep     = dependency('gio-2.0', version: glib_version_str)
 glib_dep    = dependency('glib-2.0', version: glib_version_str)
 json_dep    = dependency('json-glib-1.0', version: '>= 1.2.8')

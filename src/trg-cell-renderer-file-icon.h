@@ -38,11 +38,11 @@ G_BEGIN_DECLS
     (G_TYPE_INSTANCE_GET_CLASS((obj), TRG_TYPE_CELL_RENDERER_FILE_ICON,                            \
                                TrgCellRendererFileIconClass))
 typedef struct {
-    GtkCellRendererPixbuf parent;
+    GtkCellRenderer parent;
 } TrgCellRendererFileIcon;
 
 typedef struct {
-    GtkCellRendererPixbufClass parent_class;
+    GtkCellRendererClass parent_class;
 } TrgCellRendererFileIconClass;
 
 GType trg_cell_renderer_file_icon_get_type(void);

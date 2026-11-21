@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <json-glib/json-glib.h>
@@ -67,7 +69,7 @@ static void trg_torrent_move_response_cb(GtkDialog *dlg, gint res_id, gpointer d
     } else {
         json_array_unref(priv->ids);
     }
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    trg_widget_destroy(GTK_WIDGET(dlg));
 }
 
 static void location_changed(GtkComboBox *w, gpointer data)
@@ -109,13 +111,13 @@ static GObject *trg_torrent_move_dialog_constructor(GType type, guint n_construc
         priv->move_button,
         trg_destination_combo_has_text(TRG_DESTINATION_COMBO(priv->location_combo)));
 
-    gtk_container_set_border_width(GTK_CONTAINER(object), GUI_PAD);
+    trg_container_set_border_width(GTK_WIDGET(object), GUI_PAD);
 
     gtk_dialog_set_default_response(GTK_DIALOG(object), GTK_RESPONSE_ACCEPT);
 
-    gtk_container_set_border_width(GTK_CONTAINER(t), GUI_PAD);
+    trg_container_set_border_width(t, GUI_PAD);
 
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(object))), t, TRUE, TRUE, 0);
+    trg_box_pack(gtk_dialog_get_content_area(GTK_DIALOG(object)), t, TRUE, TRUE, 0);
 
     count = gtk_tree_selection_count_selected_rows(
         gtk_tree_view_get_selection(GTK_TREE_VIEW(priv->treeview)));

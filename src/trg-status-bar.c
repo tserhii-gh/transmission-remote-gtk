@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
 #include <gtk/gtk.h>
@@ -78,7 +80,7 @@ void trg_status_bar_reset(TrgStatusBar *sb)
     gtk_widget_set_visible(priv->turtleEventBox, FALSE);
 }
 
-static void turtle_toggle(GtkWidget *w, GdkEventButton *event, gpointer data)
+static void turtle_toggle(GtkWidget *w, gpointer data)
 {
     TrgStatusBarPrivate *priv = TRG_STATUS_BAR_GET_PRIVATE(data);
     JsonNode *req = session_set();
@@ -86,12 +88,11 @@ static void turtle_toggle(GtkWidget *w, GdkEventButton *event, gpointer data)
     const gchar *iconName;
     gboolean altSpeedOn;
 
-    gtk_image_get_icon_name(GTK_IMAGE(priv->turtleImage), &iconName, NULL);
+    iconName = gtk_image_get_icon_name(GTK_IMAGE(priv->turtleImage));
     altSpeedOn = g_strcmp0(iconName, "alt-speed-on") == 0;
 
     gtk_image_set_from_icon_name(GTK_IMAGE(priv->turtleImage),
-                                 altSpeedOn ? "alt-speed-off" : "alt-speed-on",
-                                 GTK_ICON_SIZE_SMALL_TOOLBAR);
+                                 altSpeedOn ? "alt-speed-off" : "alt-speed-on");
     json_object_set_boolean_member(args, SGET_ALT_SPEED_ENABLED, !altSpeedOn);
 
     dispatch_rpc_async(priv->client, req, on_session_set, priv->win);
@@ -100,26 +101,30 @@ static void turtle_toggle(GtkWidget *w, GdkEventButton *event, gpointer data)
 static void trg_status_bar_init(TrgStatusBar *self)
 {
     TrgStatusBarPrivate *priv = TRG_STATUS_BAR_GET_PRIVATE(self);
-    gtk_container_set_border_width(GTK_CONTAINER(self), 2);
+
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(self), GTK_ORIENTATION_HORIZONTAL);
+    trg_container_set_border_width(self, 2);
 
     priv->info_lbl = gtk_label_new(_("Disconnected"));
     gtk_label_set_ellipsize(GTK_LABEL(priv->info_lbl), PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start(GTK_BOX(self), priv->info_lbl, FALSE, TRUE, 0);
+    trg_box_pack(self, priv->info_lbl, FALSE, TRUE, 0);
 
     priv->turtleImage = gtk_image_new();
 
-    priv->turtleEventBox = gtk_event_box_new();
-    g_signal_connect(priv->turtleEventBox, "button-press-event", G_CALLBACK(turtle_toggle), self);
+    priv->turtleEventBox = gtk_button_new();
+    gtk_button_set_has_frame(GTK_BUTTON(priv->turtleEventBox), FALSE);
+    gtk_widget_add_css_class(priv->turtleEventBox, "flat");
+    g_signal_connect(priv->turtleEventBox, "clicked", G_CALLBACK(turtle_toggle), self);
     gtk_widget_set_visible(priv->turtleEventBox, FALSE);
-    gtk_container_add(GTK_CONTAINER(priv->turtleEventBox), priv->turtleImage);
-    gtk_box_pack_end(GTK_BOX(self), priv->turtleEventBox, FALSE, TRUE, 5);
+    gtk_button_set_child(GTK_BUTTON(priv->turtleEventBox), priv->turtleImage);
+    trg_box_pack_end(self, priv->turtleEventBox, FALSE, TRUE, 5);
 
     priv->speed_lbl = gtk_label_new(NULL);
     gtk_label_set_ellipsize(GTK_LABEL(priv->speed_lbl), PANGO_ELLIPSIZE_START);
-    gtk_box_pack_end(GTK_BOX(self), priv->speed_lbl, FALSE, TRUE, 5);
+    trg_box_pack_end(self, priv->speed_lbl, FALSE, TRUE, 5);
 
     priv->free_lbl = gtk_label_new(NULL);
-    gtk_box_pack_end(GTK_BOX(self), priv->free_lbl, FALSE, TRUE, 5);
+    trg_box_pack_end(self, priv->free_lbl, FALSE, TRUE, 5);
 }
 
 void trg_status_bar_push_connection_msg(TrgStatusBar *sb, const gchar *msg)
@@ -170,9 +175,8 @@ void trg_status_bar_session_update(TrgStatusBar *sb, JsonObject *session)
     }
 
     gtk_image_set_from_icon_name(GTK_IMAGE(priv->turtleImage),
-                                 altSpeedEnabled ? "alt-speed-on" : "alt-speed-off",
-                                 GTK_ICON_SIZE_SMALL_TOOLBAR);
-    gtk_widget_set_tooltip_text(priv->turtleImage,
+                                 altSpeedEnabled ? "alt-speed-on" : "alt-speed-off");
+    gtk_widget_set_tooltip_text(priv->turtleEventBox,
                                 altSpeedEnabled ? _("Disable alternate speed limits")
                                                 : _("Enable alternate speed limits"));
     gtk_widget_set_visible(priv->turtleEventBox, TRUE);

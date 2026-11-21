@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <json-glib/json-glib.h>
@@ -91,7 +93,7 @@ static void trg_stats_dialog_set_property(GObject *object, guint property_id, co
 
 static void trg_stats_response_cb(GtkDialog *dlg, gint res_id, gpointer data G_GNUC_UNUSED)
 {
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    trg_widget_destroy(GTK_WIDGET(dlg));
     instance = NULL;
 }
 
@@ -266,7 +268,7 @@ static GObject *trg_stats_dialog_constructor(GType type, guint n_construct_prope
     gtk_window_set_destroy_with_parent(GTK_WINDOW(obj), TRUE);
     gtk_dialog_add_button(GTK_DIALOG(obj), _("_Close"), GTK_RESPONSE_CLOSE);
 
-    gtk_container_set_border_width(GTK_CONTAINER(obj), GUI_PAD);
+    trg_container_set_border_width(GTK_WIDGET(obj), GUI_PAD);
 
     gtk_dialog_set_default_response(GTK_DIALOG(obj), GTK_RESPONSE_CLOSE);
 
@@ -291,8 +293,8 @@ static GObject *trg_stats_dialog_constructor(GType type, guint n_construct_prope
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(priv->model));
 
-    gtk_container_set_border_width(GTK_CONTAINER(tv), GUI_PAD);
-    gtk_box_pack_start(GTK_BOX(gtk_bin_get_child(GTK_BIN(obj))), tv, TRUE, TRUE, 0);
+    trg_container_set_border_width(tv, GUI_PAD);
+    trg_box_pack(trg_bin_get_child(GTK_WIDGET(obj)), tv, TRUE, TRUE, 0);
 
     dispatch_rpc_async(priv->client, session_stats(), on_stats_reply, obj);
 

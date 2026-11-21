@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
@@ -289,11 +291,11 @@ GtkWidget *gtr_combo_box_new_enum(const char *text_1, ...)
 
 GtkWidget *my_scrolledwin_new(GtkWidget *child)
 {
-    GtkWidget *scrolled_win = gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget *scrolled_win = gtk_scrolled_window_new();
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_win), GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled_win), GTK_SHADOW_ETCHED_IN);
-    gtk_container_add(GTK_CONTAINER(scrolled_win), child);
+    gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_win), TRUE);
+    trg_container_add(scrolled_win, child);
     return scrolled_win;
 }
 
@@ -319,8 +321,8 @@ void trg_error_dialog(GtkWindow *parent, gchar *msg)
     GtkWidget *dialog = gtk_message_dialog_new(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR,
                                                GTK_BUTTONS_OK, "%s", msg);
     gtk_window_set_title(GTK_WINDOW(dialog), _("Error"));
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
+    trg_dialog_run(GTK_DIALOG(dialog));
+    trg_widget_destroy(dialog);
 }
 
 gchar *make_error_message(JsonObject *response, gint status, gchar *err_msg)

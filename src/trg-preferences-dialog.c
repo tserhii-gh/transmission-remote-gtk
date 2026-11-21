@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib-object.h>
 #include <glib.h>
 #include <glib/gi18n.h>
@@ -151,7 +153,7 @@ static void trg_preferences_response_cb(GtkDialog *dlg, gint res_id, gpointer da
         trg_pref_widget_desc_free((trg_pref_widget_desc *)li->data);
     g_list_free(priv->widgets);
 
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    trg_widget_destroy(GTK_WIDGET(dlg));
     instance = NULL;
 }
 
@@ -176,10 +178,10 @@ static void entry_refresh(TrgPrefs *prefs, void *wdp)
     gchar *value = trg_prefs_get_string(prefs, wd->key, wd->flags);
 
     if (value) {
-        gtk_entry_set_text(GTK_ENTRY(wd->widget), value);
+        gtk_editable_set_text(GTK_EDITABLE(wd->widget), value);
         g_free(value);
     } else {
-        gtk_entry_set_text(GTK_ENTRY(wd->widget), "");
+        gtk_editable_set_text(GTK_EDITABLE(wd->widget), "");
     }
 }
 
@@ -187,7 +189,7 @@ static void entry_save(TrgPrefs *prefs, void *wdp)
 {
     trg_pref_widget_desc *wd = (trg_pref_widget_desc *)wdp;
 
-    trg_prefs_set_string(prefs, wd->key, gtk_entry_get_text(GTK_ENTRY(wd->widget)), wd->flags);
+    trg_prefs_set_string(prefs, wd->key, gtk_editable_get_text(GTK_EDITABLE(wd->widget)), wd->flags);
 }
 
 static GtkWidget *trgp_entry_new(TrgPreferencesDialog *dlg, gchar *key, int flags)
@@ -294,7 +296,7 @@ static void notebook_toggled_cb(GtkToggleButton *b, gpointer data)
 static void trgp_double_special_dependent(GtkWidget *widget, gpointer data)
 {
     TrgPreferencesDialogPrivate *priv
-        = TRG_PREFERENCES_DIALOG_GET_PRIVATE(gtk_widget_get_toplevel(widget));
+        = TRG_PREFERENCES_DIALOG_GET_PRIVATE(trg_widget_get_toplevel(widget));
     gtk_widget_set_sensitive(
         GTK_WIDGET(data),
         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))
@@ -430,13 +432,13 @@ static void name_changed_cb(GtkWidget *w, gpointer data)
     model = gtk_combo_box_get_model(combo);
 
     if (gtk_combo_box_get_active_iter(combo, &iter)) {
-        gtk_list_store_set(GTK_LIST_STORE(model), &iter, 1, gtk_entry_get_text(GTK_ENTRY(w)), -1);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter, 1, gtk_editable_get_text(GTK_EDITABLE(w)), -1);
     }
 }
 
 static void del_profile_cb(GtkWidget *w, gpointer data)
 {
-    GtkWidget *win = gtk_widget_get_toplevel(w);
+    GtkWidget *win = trg_widget_get_toplevel(w);
     TrgPreferencesDialogPrivate *priv = TRG_PREFERENCES_DIALOG_GET_PRIVATE(win);
     TrgPrefs *prefs = priv->prefs;
     GtkComboBox *combo = GTK_COMBO_BOX(data);
@@ -455,7 +457,7 @@ static void del_profile_cb(GtkWidget *w, gpointer data)
 
 static void add_profile_cb(GtkWidget *w, gpointer data)
 {
-    GtkWidget *win = gtk_widget_get_toplevel(w);
+    GtkWidget *win = trg_widget_get_toplevel(w);
     TrgPreferencesDialogPrivate *priv = TRG_PREFERENCES_DIALOG_GET_PRIVATE(win);
     GtkComboBox *combo = GTK_COMBO_BOX(data);
     GtkTreeModel *profileModel = gtk_combo_box_get_model(combo);
@@ -589,13 +591,13 @@ static GtkWidget *trg_prefs_serverPage(TrgPreferencesDialog *dlg)
     profileButtonsHbox = trg_hbox_new(FALSE, 0);
     w = gtk_button_new_with_label(_("New"));
     g_signal_connect(w, "clicked", G_CALLBACK(add_profile_cb), priv->profileComboBox);
-    gtk_box_pack_start(GTK_BOX(profileButtonsHbox), w, FALSE, FALSE, 4);
+    trg_box_pack(profileButtonsHbox, w, FALSE, FALSE, 4);
 
     priv->profileDelButton = gtk_button_new_with_label(_("Delete"));
     g_signal_connect(priv->profileDelButton, "clicked", G_CALLBACK(del_profile_cb),
                      priv->profileComboBox);
     gtk_widget_set_sensitive(priv->profileDelButton, FALSE);
-    gtk_box_pack_start(GTK_BOX(profileButtonsHbox), priv->profileDelButton, FALSE, FALSE, 4);
+    trg_box_pack(profileButtonsHbox, priv->profileDelButton, FALSE, FALSE, 4);
 
     trg_prefs_profile_combo_populate(dlg, GTK_COMBO_BOX(priv->profileComboBox), prefs);
     g_signal_connect(G_OBJECT(priv->profileComboBox), "changed", G_CALLBACK(profile_changed_cb),
@@ -658,11 +660,11 @@ static GtkWidget *trg_prefs_serverPage(TrgPreferencesDialog *dlg)
 
     frame = gtk_frame_new(NULL);
     frameHbox = trg_hbox_new(FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(frameHbox), profileLabel, FALSE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(frameHbox), priv->profileComboBox, FALSE, FALSE, 4);
+    trg_box_pack(frameHbox, profileLabel, FALSE, FALSE, 2);
+    trg_box_pack(frameHbox, priv->profileComboBox, FALSE, FALSE, 4);
     gtk_frame_set_label_widget(GTK_FRAME(frame), frameHbox);
-    gtk_container_set_border_width(GTK_CONTAINER(frame), 5);
-    gtk_container_add(GTK_CONTAINER(frame), t);
+    trg_container_set_border_width(frame, 5);
+    trg_container_add(frame, t);
 
     return frame;
 }
@@ -688,7 +690,7 @@ static GObject *trg_preferences_dialog_constructor(GType type, guint n_construct
     gtk_dialog_set_default_response(GTK_DIALOG(object), GTK_RESPONSE_OK);
 
     gtk_window_set_title(GTK_WINDOW(object), _("Local Preferences"));
-    gtk_container_set_border_width(GTK_CONTAINER(object), GUI_PAD);
+    trg_container_set_border_width(GTK_WIDGET(object), GUI_PAD);
 
     g_signal_connect(G_OBJECT(object), "response", G_CALLBACK(trg_preferences_response_cb), NULL);
 
@@ -714,9 +716,9 @@ static GObject *trg_preferences_dialog_constructor(GType type, guint n_construct
                              trg_prefs_dirsPage(TRG_PREFERENCES_DIALOG(object)),
                              gtk_label_new(_("Directories")));
 
-    gtk_container_set_border_width(GTK_CONTAINER(notebook), GUI_PAD);
+    trg_container_set_border_width(notebook, GUI_PAD);
 
-    gtk_box_pack_start(GTK_BOX(contentvbox), notebook, TRUE, TRUE, 0);
+    trg_box_pack(contentvbox, notebook, TRUE, TRUE, 0);
 
     return object;
 }

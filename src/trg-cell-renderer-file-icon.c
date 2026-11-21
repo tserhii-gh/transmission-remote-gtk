@@ -31,7 +31,7 @@ enum {
     PROP_FILE_NAME
 };
 
-G_DEFINE_TYPE(TrgCellRendererFileIcon, trg_cell_renderer_file_icon, GTK_TYPE_CELL_RENDERER_PIXBUF)
+G_DEFINE_TYPE(TrgCellRendererFileIcon, trg_cell_renderer_file_icon, GTK_TYPE_CELL_RENDERER)
 #define TRG_CELL_RENDERER_FILE_ICON_GET_PRIVATE(o)                                                 \
     (G_TYPE_INSTANCE_GET_PRIVATE((o), TRG_TYPE_CELL_RENDERER_FILE_ICON,                            \
                                  TrgCellRendererFileIconPrivate))
@@ -40,7 +40,20 @@ typedef struct _TrgCellRendererFileIconPrivate TrgCellRendererFileIconPrivate;
 struct _TrgCellRendererFileIconPrivate {
     gint64 file_id;
     gchar *text;
+    GIcon *icon;
 };
+
+static void trg_cell_renderer_file_icon_get_preferred_width(GtkCellRenderer *cell, GtkWidget *widget,
+                                                            gint *minimum_size, gint *natural_size);
+static void trg_cell_renderer_file_icon_get_preferred_height(GtkCellRenderer *cell,
+                                                             GtkWidget *widget,
+                                                             gint *minimum_size,
+                                                             gint *natural_size);
+static void trg_cell_renderer_file_icon_snapshot(GtkCellRenderer *cell, GtkSnapshot *snapshot,
+                                                 GtkWidget *widget,
+                                                 const GdkRectangle *background_area,
+                                                 const GdkRectangle *cell_area,
+                                                 GtkCellRendererState flags);
 
 static void trg_cell_renderer_file_icon_get_property(GObject *object, guint property_id,
                                                      GValue *value, GParamSpec *pspec)
@@ -60,30 +73,24 @@ static void trg_cell_renderer_file_icon_refresh(TrgCellRendererFileIcon *fi)
 {
     TrgCellRendererFileIconPrivate *priv = TRG_CELL_RENDERER_FILE_ICON_GET_PRIVATE(fi);
 
+    g_clear_object(&priv->icon);
+
     if (priv->file_id == -2) {
         return;
     } else if (priv->file_id == -1) {
-        g_object_set(fi, "icon-name", "folder", NULL);
+        priv->icon = g_themed_icon_new("folder");
     } else if (priv->text) {
 #ifndef G_OS_WIN32
         gboolean uncertain;
         gchar *mimetype = g_content_type_guess(priv->text, NULL, 0, &uncertain);
-        GIcon *icon = NULL;
 
         if (!uncertain && mimetype)
-            icon = g_content_type_get_icon(mimetype);
+            priv->icon = g_content_type_get_icon(mimetype);
 
         g_free(mimetype);
-
-        if (icon) {
-            g_object_set(fi, "gicon", icon, NULL);
-            g_object_unref(icon);
-        } else {
-            g_object_set(fi, "icon-name", "file", NULL);
-        }
-#else
-        g_object_set(fi, "icon-name", "file", NULL);
 #endif
+        if (priv->icon == NULL)
+            priv->icon = g_themed_icon_new("text-x-generic");
     }
 }
 
@@ -109,6 +116,7 @@ static void trg_cell_renderer_file_icon_dispose(GObject *object)
 {
     TrgCellRendererFileIconPrivate *priv = TRG_CELL_RENDERER_FILE_ICON_GET_PRIVATE(object);
     g_free(priv->text);
+    g_clear_object(&priv->icon);
     G_OBJECT_CLASS(trg_cell_renderer_file_icon_parent_class)->dispose(object);
 }
 
@@ -132,11 +140,86 @@ static void trg_cell_renderer_file_icon_class_init(TrgCellRendererFileIconClass 
                                                             | G_PARAM_STATIC_NICK
                                                             | G_PARAM_STATIC_BLURB));
 
+    GtkCellRendererClass *cell_class = GTK_CELL_RENDERER_CLASS(klass);
+
+    cell_class->get_preferred_width = trg_cell_renderer_file_icon_get_preferred_width;
+    cell_class->get_preferred_height = trg_cell_renderer_file_icon_get_preferred_height;
+    cell_class->snapshot = trg_cell_renderer_file_icon_snapshot;
+
     g_type_class_add_private(klass, sizeof(TrgCellRendererFileIconPrivate));
+}
+
+#define FILE_ICON_SIZE 16
+
+static void trg_cell_renderer_file_icon_get_preferred_width(GtkCellRenderer *cell,
+                                                            GtkWidget *widget G_GNUC_UNUSED,
+                                                            gint *minimum_size, gint *natural_size)
+{
+    gint xpad, ypad;
+
+    gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
+
+    if (minimum_size)
+        *minimum_size = FILE_ICON_SIZE + xpad * 2;
+    if (natural_size)
+        *natural_size = FILE_ICON_SIZE + xpad * 2;
+}
+
+static void trg_cell_renderer_file_icon_get_preferred_height(GtkCellRenderer *cell,
+                                                             GtkWidget *widget G_GNUC_UNUSED,
+                                                             gint *minimum_size, gint *natural_size)
+{
+    gint xpad, ypad;
+
+    gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
+
+    if (minimum_size)
+        *minimum_size = FILE_ICON_SIZE + ypad * 2;
+    if (natural_size)
+        *natural_size = FILE_ICON_SIZE + ypad * 2;
+}
+
+static void trg_cell_renderer_file_icon_snapshot(GtkCellRenderer *cell, GtkSnapshot *snapshot,
+                                                 GtkWidget *widget,
+                                                 const GdkRectangle *background_area,
+                                                 const GdkRectangle *cell_area,
+                                                 GtkCellRendererState flags)
+{
+    TrgCellRendererFileIconPrivate *priv = TRG_CELL_RENDERER_FILE_ICON_GET_PRIVATE(cell);
+    GtkIconTheme *theme;
+    GtkIconPaintable *icon;
+    graphene_point_t point;
+    gint xpad, ypad;
+
+    (void)background_area;
+    (void)flags;
+
+    if (priv->icon == NULL || widget == NULL)
+        return;
+
+    theme = gtk_icon_theme_get_for_display(gtk_widget_get_display(widget));
+    icon = gtk_icon_theme_lookup_by_gicon(theme, priv->icon, FILE_ICON_SIZE, 1,
+                                          gtk_widget_get_direction(widget), GTK_ICON_LOOKUP_NONE);
+
+    if (icon == NULL)
+        return;
+
+    gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
+
+    point.x = cell_area->x + xpad;
+    point.y = cell_area->y + ypad + (cell_area->height - ypad * 2 - FILE_ICON_SIZE) / 2.0;
+
+    gtk_snapshot_save(snapshot);
+    gtk_snapshot_translate(snapshot, &point);
+    gdk_paintable_snapshot(GDK_PAINTABLE(icon), snapshot, FILE_ICON_SIZE, FILE_ICON_SIZE);
+    gtk_snapshot_restore(snapshot);
+
+    g_object_unref(icon);
 }
 
 static void trg_cell_renderer_file_icon_init(TrgCellRendererFileIcon *self)
 {
+    (void)self;
 }
 
 GtkCellRenderer *trg_cell_renderer_file_icon_new(void)

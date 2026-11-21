@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <json-glib/json-glib.h>
@@ -109,7 +111,7 @@ static void trg_remote_prefs_response_cb(GtkDialog *dlg, gint res_id, gpointer d
 
     trg_json_widget_desc_list_free(priv->widgets);
 
-    gtk_widget_destroy(GTK_WIDGET(dlg));
+    trg_widget_destroy(GTK_WIDGET(dlg));
     instance = NULL;
 }
 
@@ -150,7 +152,7 @@ static void trg_remote_prefs_dialog_set_property(GObject *object, guint property
 static void trg_remote_prefs_double_special_dependent(GtkWidget *widget, gpointer data)
 {
     TrgRemotePrefsDialogPrivate *priv
-        = TRG_REMOTE_PREFS_DIALOG_GET_PRIVATE(gtk_widget_get_toplevel(GTK_WIDGET(widget)));
+        = TRG_REMOTE_PREFS_DIALOG_GET_PRIVATE(trg_widget_get_toplevel(GTK_WIDGET(widget)));
 
     gtk_widget_set_sensitive(
         GTK_WIDGET(data),
@@ -176,7 +178,7 @@ static gboolean on_output(GtkSpinButton *spin, gpointer data)
     adj = gtk_spin_button_get_adjustment(spin);
     value = (int)gtk_adjustment_get_value(adj);
     text = g_strdup_printf("%02d", value);
-    gtk_entry_set_text(GTK_ENTRY(spin), text);
+    gtk_editable_set_text(GTK_EDITABLE(spin), text);
     g_free(text);
 
     return TRUE;
@@ -212,9 +214,9 @@ static GtkWidget *trg_rprefs_time_widget_new(GList **wl, JsonObject *obj, const 
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(hourSpin), floor((gdouble)value / 60.0));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(minutesSpin), (gdouble)(value % 60));
 
-    gtk_box_pack_start(GTK_BOX(hbox), hourSpin, TRUE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), colonLabel, TRUE, FALSE, 2);
-    gtk_box_pack_start(GTK_BOX(hbox), minutesSpin, TRUE, FALSE, 0);
+    trg_box_pack(hbox, hourSpin, TRUE, FALSE, 0);
+    trg_box_pack(hbox, colonLabel, TRUE, FALSE, 2);
+    trg_box_pack(hbox, minutesSpin, TRUE, FALSE, 0);
 
     *wl = g_list_append(*wl, wd);
 
@@ -229,9 +231,9 @@ static GtkWidget *trg_rprefs_time_begin_end_new(GList **wl, JsonObject *obj,
         = trg_rprefs_time_widget_new(wl, obj, SGET_ALT_SPEED_TIME_BEGIN, alt_time_check);
     GtkWidget *end = trg_rprefs_time_widget_new(wl, obj, SGET_ALT_SPEED_TIME_END, alt_time_check);
 
-    gtk_box_pack_start(GTK_BOX(hbox), begin, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new("-"), FALSE, FALSE, 10);
-    gtk_box_pack_start(GTK_BOX(hbox), end, FALSE, FALSE, 0);
+    trg_box_pack(hbox, begin, FALSE, FALSE, 0);
+    trg_box_pack(hbox, gtk_label_new("-"), FALSE, FALSE, 10);
+    trg_box_pack(hbox, end, FALSE, FALSE, 0);
 
     return hbox;
 }
@@ -627,7 +629,7 @@ static GObject *trg_remote_prefs_dialog_constructor(GType type, guint n_construc
     gtk_dialog_add_button(GTK_DIALOG(object), _("_Close"), GTK_RESPONSE_CLOSE);
     gtk_dialog_add_button(GTK_DIALOG(object), _("_OK"), GTK_RESPONSE_OK);
 
-    gtk_container_set_border_width(GTK_CONTAINER(object), GUI_PAD);
+    trg_container_set_border_width(GTK_WIDGET(object), GUI_PAD);
 
     gtk_dialog_set_default_response(GTK_DIALOG(object), GTK_RESPONSE_OK);
 
@@ -651,9 +653,9 @@ static GObject *trg_remote_prefs_dialog_constructor(GType type, guint n_construc
                              trg_rprefs_limitsPage(TRG_REMOTE_PREFS_DIALOG(object), session),
                              gtk_label_new(_("Limits")));
 
-    gtk_container_set_border_width(GTK_CONTAINER(notebook), GUI_PAD);
+    trg_container_set_border_width(notebook, GUI_PAD);
 
-    gtk_box_pack_start(GTK_BOX(contentvbox), notebook, TRUE, TRUE, 0);
+    trg_box_pack(contentvbox, notebook, TRUE, TRUE, 0);
 
     return object;
 }

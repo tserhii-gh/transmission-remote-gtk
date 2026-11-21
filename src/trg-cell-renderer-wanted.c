@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include <math.h>
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <stdint.h>
@@ -33,14 +35,25 @@ enum {
     PROP_WANTED_VALUE
 };
 
-G_DEFINE_TYPE(TrgCellRendererWanted, trg_cell_renderer_wanted, GTK_TYPE_CELL_RENDERER_TOGGLE)
+G_DEFINE_TYPE(TrgCellRendererWanted, trg_cell_renderer_wanted, GTK_TYPE_CELL_RENDERER)
 #define TRG_CELL_RENDERER_WANTED_GET_PRIVATE(o)                                                    \
     (G_TYPE_INSTANCE_GET_PRIVATE((o), TRG_TYPE_CELL_RENDERER_WANTED, TrgCellRendererWantedPrivate))
 typedef struct _TrgCellRendererWantedPrivate TrgCellRendererWantedPrivate;
 
 struct _TrgCellRendererWantedPrivate {
     gint wanted_value;
+    gboolean active;
+    gboolean inconsistent;
 };
+
+static void trg_cell_renderer_wanted_get_preferred_size(GtkCellRenderer *cell,
+                                                        GtkWidget *widget G_GNUC_UNUSED,
+                                                        gint *minimum_size, gint *natural_size);
+static void trg_cell_renderer_wanted_snapshot(GtkCellRenderer *cell, GtkSnapshot *snapshot,
+                                              GtkWidget *widget,
+                                              const GdkRectangle *background_area,
+                                              const GdkRectangle *cell_area,
+                                              GtkCellRendererState flags);
 
 static void trg_cell_renderer_wanted_get_property(GObject *object, guint property_id, GValue *value,
                                                   GParamSpec *pspec)
@@ -63,8 +76,8 @@ static void trg_cell_renderer_wanted_set_property(GObject *object, guint propert
 
     if (property_id == PROP_WANTED_VALUE) {
         priv->wanted_value = g_value_get_int(value);
-        g_object_set(G_OBJECT(object), "inconsistent", (priv->wanted_value == TR_PRI_MIXED),
-                     "active", (priv->wanted_value == TRUE), NULL);
+        priv->inconsistent = (priv->wanted_value == TR_PRI_MIXED);
+        priv->active = (priv->wanted_value == TRUE);
     } else {
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
@@ -83,13 +96,79 @@ static void trg_cell_renderer_wanted_class_init(TrgCellRendererWantedClass *klas
                          G_PARAM_READWRITE | G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK
                              | G_PARAM_STATIC_BLURB));
 
+    GtkCellRendererClass *cell_class = GTK_CELL_RENDERER_CLASS(klass);
+
+    cell_class->get_preferred_width = trg_cell_renderer_wanted_get_preferred_size;
+    cell_class->get_preferred_height = trg_cell_renderer_wanted_get_preferred_size;
+    cell_class->snapshot = trg_cell_renderer_wanted_snapshot;
+
     g_type_class_add_private(klass, sizeof(TrgCellRendererWantedPrivate));
+}
+
+#define WANTED_ICON_SIZE 16
+
+static void trg_cell_renderer_wanted_get_preferred_size(GtkCellRenderer *cell,
+                                                        GtkWidget *widget G_GNUC_UNUSED,
+                                                        gint *minimum_size, gint *natural_size)
+{
+    gint xpad, ypad;
+
+    gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
+
+    if (minimum_size)
+        *minimum_size = WANTED_ICON_SIZE + xpad * 2;
+    if (natural_size)
+        *natural_size = WANTED_ICON_SIZE + ypad * 2;
+}
+
+static void trg_cell_renderer_wanted_snapshot(GtkCellRenderer *cell, GtkSnapshot *snapshot,
+                                              GtkWidget *widget,
+                                              const GdkRectangle *background_area,
+                                              const GdkRectangle *cell_area,
+                                              GtkCellRendererState flags)
+{
+    TrgCellRendererWantedPrivate *priv = TRG_CELL_RENDERER_WANTED_GET_PRIVATE(cell);
+    const char *icon_name = NULL;
+    GtkIconTheme *theme;
+    GtkIconPaintable *icon;
+    graphene_point_t point;
+    gint xpad, ypad, size;
+
+    (void)background_area;
+    (void)flags;
+
+    if (priv->inconsistent)
+        icon_name = "dialog-question-symbolic";
+    else if (priv->active)
+        icon_name = "object-select-symbolic";
+
+    if (icon_name == NULL || widget == NULL)
+        return;
+
+    theme = gtk_icon_theme_get_for_display(gtk_widget_get_display(widget));
+    icon = gtk_icon_theme_lookup_icon(theme, icon_name, NULL, WANTED_ICON_SIZE, 1,
+                                      gtk_widget_get_direction(widget), GTK_ICON_LOOKUP_NONE);
+
+    if (icon == NULL)
+        return;
+
+    gtk_cell_renderer_get_padding(cell, &xpad, &ypad);
+    size = WANTED_ICON_SIZE;
+
+    point.x = cell_area->x + xpad + (cell_area->width - xpad * 2 - size) / 2.0;
+    point.y = cell_area->y + ypad + (cell_area->height - ypad * 2 - size) / 2.0;
+
+    gtk_snapshot_save(snapshot);
+    gtk_snapshot_translate(snapshot, &point);
+    gdk_paintable_snapshot(GDK_PAINTABLE(icon), snapshot, size, size);
+    gtk_snapshot_restore(snapshot);
+
+    g_object_unref(icon);
 }
 
 static void trg_cell_renderer_wanted_init(TrgCellRendererWanted *self)
 {
-    /*g_object_set(G_OBJECT(self), "xalign", (gfloat) 0.5, "yalign", (gfloat) 0.5,
-       NULL); */
+    (void)self;
 }
 
 GtkCellRenderer *trg_cell_renderer_wanted_new(void)

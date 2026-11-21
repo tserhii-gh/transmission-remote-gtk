@@ -98,7 +98,7 @@ GtkWidget *trg_json_widget_entry_new(GList **wl, JsonObject *obj, const gchar *k
                          w);
     }
 
-    gtk_entry_set_text(GTK_ENTRY(w), json_object_get_string_member(obj, key));
+    gtk_editable_set_text(GTK_EDITABLE(w), json_object_get_string_member(obj, key));
 
     *wl = g_list_append(*wl, wd);
 
@@ -164,7 +164,7 @@ void trg_json_widget_check_save(GtkWidget *widget, JsonObject *obj, gchar *key)
 
 void trg_json_widget_entry_save(GtkWidget *widget, JsonObject *obj, gchar *key)
 {
-    json_object_set_string_member(obj, key, gtk_entry_get_text(GTK_ENTRY(widget)));
+    json_object_set_string_member(obj, key, gtk_editable_get_text(GTK_EDITABLE(widget)));
 }
 
 void trg_json_widget_spin_int_save(GtkWidget *widget, JsonObject *obj, gchar *key)

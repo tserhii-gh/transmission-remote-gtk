@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     TrgClient *client;
     TrgGtkApp *gtk_app;
 
-    gtk_init(&argc, &argv);
+    gtk_init();
 
     g_set_application_name(PACKAGE_NAME);
     bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");

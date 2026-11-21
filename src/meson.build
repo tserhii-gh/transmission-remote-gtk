@@ -21,6 +21,8 @@ src_files = [
     'trg-cell-renderer-speed.c',
     'trg-cell-renderer-wanted.c',
     'trg-client.c',
+    'trg-compat.c',
+    'trg-menu.c',
     'trg-destination-combo.c',
     'trg-file-parser.c',
     'trg-file-rename-dialog.c',

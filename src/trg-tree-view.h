@@ -21,7 +21,9 @@
 #define _TRG_TREE_VIEW_H_
 
 #include <glib-object.h>
+#include <gtk/gtk.h>
 
+#include "trg-menu.h"
 #include "trg-prefs.h"
 
 G_BEGIN_DECLS
@@ -92,7 +94,7 @@ void trg_tree_view_set_prefs(TrgTreeView *tv, TrgPrefs *prefs);
 void trg_tree_view_persist(TrgTreeView *tv, guint flags);
 void trg_tree_view_remove_all_columns(TrgTreeView *tv);
 void trg_tree_view_restore_sort(TrgTreeView *tv, guint flags);
-GtkWidget *trg_tree_view_sort_menu(TrgTreeView *tv, const gchar *label);
+TrgMenu *trg_tree_view_sort_menu(TrgTreeView *tv);
 gboolean trg_tree_view_is_column_showing(TrgTreeView *tv, gint index);
 
 #endif /* _TRG_TREE_VIEW_H_ */

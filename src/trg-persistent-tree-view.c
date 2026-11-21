@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include "trg-compat.h"
+
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
@@ -346,27 +348,27 @@ static GObject *trg_persistent_tree_view_constructor(GType type, guint n_constru
 
     w = gtk_button_new_with_label(_("Add"));
     g_signal_connect(w, "clicked", G_CALLBACK(trg_persistent_tree_view_add_cb), object);
-    gtk_box_pack_start(GTK_BOX(hbox), w, FALSE, FALSE, 4);
+    trg_box_pack(hbox, w, FALSE, FALSE, 4);
 
     w = priv->delButton = gtk_button_new_with_label(_("Delete"));
     gtk_widget_set_sensitive(w, FALSE);
     g_signal_connect(w, "clicked", G_CALLBACK(trg_persistent_tree_view_del_cb), object);
-    gtk_box_pack_start(GTK_BOX(hbox), w, FALSE, FALSE, 4);
+    trg_box_pack(hbox, w, FALSE, FALSE, 4);
 
     w = priv->upButton = gtk_button_new_with_label(_("Up"));
     gtk_widget_set_sensitive(w, FALSE);
     g_signal_connect(w, "clicked", G_CALLBACK(trg_persistent_tree_view_up_cb), object);
-    gtk_box_pack_start(GTK_BOX(hbox), w, FALSE, FALSE, 4);
+    trg_box_pack(hbox, w, FALSE, FALSE, 4);
 
     w = priv->downButton = gtk_button_new_with_label(_("Down"));
     gtk_widget_set_sensitive(w, FALSE);
     g_signal_connect(w, "clicked", G_CALLBACK(trg_persistent_tree_view_down_cb), object);
-    gtk_box_pack_start(GTK_BOX(hbox), w, FALSE, FALSE, 4);
+    trg_box_pack(hbox, w, FALSE, FALSE, 4);
 
     priv->tv
         = trg_persistent_tree_view_tree_view_new(TRG_PERSISTENT_TREE_VIEW(object), priv->model);
-    gtk_box_pack_start(GTK_BOX(object), my_scrolledwin_new(GTK_WIDGET(priv->tv)), TRUE, TRUE, 4);
-    gtk_box_pack_start(GTK_BOX(object), hbox, FALSE, FALSE, 4);
+    trg_box_pack(object, my_scrolledwin_new(GTK_WIDGET(priv->tv)), TRUE, TRUE, 4);
+    trg_box_pack(object, hbox, FALSE, FALSE, 4);
 
     priv->wd = trg_pref_widget_desc_new(GTK_WIDGET(priv->tv), priv->key, priv->conf_flags);
     priv->wd->widget = GTK_WIDGET(object);
@@ -416,6 +418,8 @@ static void trg_persistent_tree_view_class_init(TrgPersistentTreeViewClass *klas
 
 static void trg_persistent_tree_view_init(TrgPersistentTreeView *self)
 {
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(self), GTK_ORIENTATION_VERTICAL);
+    gtk_box_set_spacing(GTK_BOX(self), 4);
 }
 
 TrgPersistentTreeView *trg_persistent_tree_view_new(TrgPrefs *prefs, GtkListStore *model,

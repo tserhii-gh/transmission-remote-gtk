@@ -36,11 +36,11 @@ G_BEGIN_DECLS
 #define TRG_CELL_RENDERER_WANTED_GET_CLASS(obj)                                                    \
     (G_TYPE_INSTANCE_GET_CLASS((obj), TRG_TYPE_CELL_RENDERER_WANTED, TrgCellRendererWantedClass))
 typedef struct {
-    GtkCellRendererToggle parent;
+    GtkCellRenderer parent;
 } TrgCellRendererWanted;
 
 typedef struct {
-    GtkCellRendererToggleClass parent_class;
+    GtkCellRendererClass parent_class;
 } TrgCellRendererWantedClass;
 
 GType trg_cell_renderer_wanted_get_type(void);

@@ -46,12 +46,37 @@ static GdkPixbuf *create_void_pixbuf(int width, int height)
     return p;
 }
 
-static int get_size_in_pixels(GtkIconSize icon_size)
+static int get_size_in_pixels(int icon_size)
 {
-    int width, height;
+    return MAX(icon_size, 1);
+}
 
-    gtk_icon_size_lookup(icon_size, &width, &height);
-    return MAX(width, height);
+/* GTK4 has no gtk_icon_info_load_icon(); render the paintable to a pixbuf. */
+static GdkPixbuf *paintable_to_pixbuf(GdkPaintable *paintable, int size)
+{
+    GtkSnapshot *snapshot = gtk_snapshot_new();
+    GskRenderNode *node;
+    cairo_surface_t *surface;
+    cairo_t *cr;
+    GdkPixbuf *pixbuf;
+
+    gdk_paintable_snapshot(paintable, snapshot, size, size);
+    node = gtk_snapshot_free_to_node(snapshot);
+
+    if (node == NULL)
+        return NULL;
+
+    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size, size);
+    cr = cairo_create(surface);
+    gsk_render_node_draw(node, cr);
+    cairo_destroy(cr);
+
+    pixbuf = gdk_pixbuf_get_from_surface(surface, 0, 0, size, size);
+
+    cairo_surface_destroy(surface);
+    gsk_render_node_unref(node);
+
+    return pixbuf;
 }
 
 static IconCache *icon_cache_new(GtkWidget *for_widget, int icon_size)
@@ -61,7 +86,7 @@ static IconCache *icon_cache_new(GtkWidget *for_widget, int icon_size)
     g_return_val_if_fail(for_widget != NULL, NULL);
 
     icon_cache = g_new0(IconCache, 1);
-    icon_cache->icon_theme = gtk_icon_theme_get_for_screen(gtk_widget_get_screen(for_widget));
+    icon_cache->icon_theme = gtk_icon_theme_get_for_display(gtk_widget_get_display(for_widget));
     icon_cache->icon_size = get_size_in_pixels(icon_size);
     icon_cache->cache = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_object_unref);
 
@@ -96,7 +121,6 @@ static const char *_icon_cache_get_icon_key(GIcon *icon)
         key = get_static_string(filename);
 
         g_free(filename);
-        g_object_unref(file);
     }
 
     return key;
@@ -105,25 +129,26 @@ static const char *_icon_cache_get_icon_key(GIcon *icon)
 static GdkPixbuf *get_themed_icon_pixbuf(GThemedIcon *icon, int size, GtkIconTheme *icon_theme)
 {
     char **icon_names = NULL;
-    GtkIconInfo *icon_info;
+    GtkIconPaintable *paintable = NULL;
     GdkPixbuf *pixbuf;
-    GError *error = NULL;
+    guint i;
 
     g_object_get(icon, "names", &icon_names, NULL);
 
-    icon_info = gtk_icon_theme_choose_icon(icon_theme, (const char **)icon_names, size, 0);
-    if (icon_info == NULL)
-        icon_info = gtk_icon_theme_lookup_icon(icon_theme, "text-x-generic", size,
-                                               GTK_ICON_LOOKUP_USE_BUILTIN);
-
-    pixbuf = gtk_icon_info_load_icon(icon_info, &error);
-    if (pixbuf == NULL) {
-        if (error && error->message)
-            g_warning("could not load icon pixbuf: %s\n", error->message);
-        g_clear_error(&error);
+    for (i = 0; icon_names != NULL && icon_names[i] != NULL; i++) {
+        paintable = gtk_icon_theme_lookup_icon(icon_theme, icon_names[i], NULL, size, 1,
+                                               GTK_TEXT_DIR_NONE, 0);
+        if (paintable != NULL)
+            break;
     }
 
-    g_clear_object(&icon_info);
+    if (paintable == NULL)
+        paintable = gtk_icon_theme_lookup_icon(icon_theme, "text-x-generic", NULL, size, 1,
+                                               GTK_TEXT_DIR_NONE, 0);
+
+    pixbuf = paintable ? paintable_to_pixbuf(GDK_PAINTABLE(paintable), size) : NULL;
+
+    g_clear_object(&paintable);
     g_strfreev(icon_names);
 
     return pixbuf;
@@ -139,7 +164,6 @@ static GdkPixbuf *get_file_icon_pixbuf(GFileIcon *icon, int size)
     filename = g_file_get_path(file);
     pixbuf = gdk_pixbuf_new_from_file_at_size(filename, size, -1, NULL);
     g_free(filename);
-    g_object_unref(file);
 
     return pixbuf;
 }
@@ -183,31 +207,31 @@ static GdkPixbuf *icon_cache_get_mime_type_icon(IconCache *icon_cache, const cha
     return pixbuf;
 }
 
-GdkPixbuf *gtr_get_mime_type_icon(const char *mime_type, GtkIconSize icon_size,
+GdkPixbuf *gtr_get_mime_type_icon(const char *mime_type, int icon_size,
                                   GtkWidget *for_widget)
 {
     int n;
 
     switch (icon_size) {
-    case GTK_ICON_SIZE_MENU:
+    case 16:
         n = 1;
         break;
-    case GTK_ICON_SIZE_SMALL_TOOLBAR:
+    case 24:
         n = 2;
         break;
-    case GTK_ICON_SIZE_LARGE_TOOLBAR:
+    case 32:
         n = 3;
         break;
-    case GTK_ICON_SIZE_BUTTON:
+    case 48:
         n = 4;
         break;
-    case GTK_ICON_SIZE_DND:
+    case 64:
         n = 5;
         break;
-    case GTK_ICON_SIZE_DIALOG:
+    case 96:
         n = 6;
         break;
-    default /*GTK_ICON_SIZE_INVALID */:
+    default:
         n = 0;
         break;
     }
